@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Report | UNIVEN BuildSafe</title><link rel="stylesheet" href="css/style.css"><link rel="stylesheet" href="css/routing.css"><link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+</head>
+<body>
+<header class="topbar"><div class="logo">UNIVEN<span>BuildSafe</span></div><nav><a href="dashboard.html">Dashboard</a><a href="map.html">Map</a><a href="projects.html">Projects</a><a href="announcements.html">Notices</a><a class="active" href="report.html">Report</a><button id="logout" class="link-button">Logout</button></nav></header>
+<main class="container narrow"><p class="tag">SAFETY REPORT</p><h1>Report a Construction Problem</h1>
+<form id="reportForm" class="form-card" enctype="multipart/form-data">
+<label>Category</label>
+<select id="category" required>
+<option value="">Select category</option>
+<option>Construction</option>
+<option>Electrical</option>
+<option>Water Supply / Damage</option>
+<option>Road / Walkway</option>
+<option>Safety Hazard</option>
+<option>Other</option>
+</select>
+<label>Your name</label><input id="name"  required minlength="2" maxlength="100">
+<label for="location">Location</label><input id="location" required minlength="3" maxlength="150"
+       placeholder="e.g. Near Library">
+<div class="location-choice-row"><div><label for="reportCampusLocation">Campus location</label><select id="reportCampusLocation"><option value="">Choose a known campus location</option></select></div><button id="pickReportLocation" class="btn secondary" type="button">Pick Exact Point</button></div>
+<p id="reportLocationStatus" class="location-selection-status" aria-live="polite">Adding a map point is optional.</p>
+<input id="latitude" type="hidden"><input id="longitude" type="hidden">
+<label for="description">Description</label><textarea id="description" rows="6" required minlength="10" maxlength="500"
+            placeholder="Describe the problem..."></textarea>
+<label for="photo">Photo (optional)</label><input id="photo" type="file" accept="image/jpeg,image/png,image/webp">
+<small class="field-help">JPEG, PNG, or WebP, up to 5 MB.</small>
+<button class="btn" type="submit">Submit Report</button><p id="message"></p>
+</form>
+</main>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="js/common.js"></script>
+<script src="js/location-picker.js"></script>
+<script src="js/report.js"></script>
+</body>
+</html>

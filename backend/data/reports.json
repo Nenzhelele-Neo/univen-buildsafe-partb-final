@@ -1,0 +1,28 @@
+[
+  {
+    "id": 1789997330730,
+    "name": "neo nenzhelele",
+    "location": "near auditorium, between the maths building",
+    "description": "sewage water everywhere",
+    "date": "2026-09-21",
+    "status": "Approved"
+  },
+  {
+    "id": 1789639726288,
+    "name": "phil",
+    "location": "near",
+    "description": "broken water pipes",
+    "date": "2026-09-17",
+    "status": "Approved",
+    "publishedTitle": "Safety Report: near",
+    "publishedCategory": "Water Supply / Damage",
+    "publishedLocation": "near",
+    "publishedDescription": "broken water pipes",
+    "publishedAffectedArea": "",
+    "publishedStartDate": "",
+    "publishedEndDate": "",
+    "publishedType": "announcement",
+    "publishedItemId": 1790001700061,
+    "publishedNoticeId": 1790001700061
+  }
+]

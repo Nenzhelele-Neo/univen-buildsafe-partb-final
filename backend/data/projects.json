@@ -1,0 +1,26 @@
+[
+  {
+    "id": 1,
+    "name": "Library Area Construction",
+    "description": "Demo construction project. Replace this information with verified campus project data.",
+    "location": "Library Area",
+    "status": "In Progress",
+    "startDate": "2026-08-10",
+    "endDate": "2026-10-30",
+    "affectedArea": "Library entrance and nearby walkway",
+    "latitude": -22.976405463673277,
+    "longitude": 30.443044085504766
+  },
+  {
+    "id": 2,
+    "name": "Road Maintenance",
+    "description": "Demo road maintenance project.",
+    "location": "Main Campus Road",
+    "status": "Planned",
+    "startDate": "2026-10-01",
+    "endDate": "2026-11-15",
+    "affectedArea": "Main road",
+    "latitude": -22.978,
+    "longitude": 30.458
+  }
+]

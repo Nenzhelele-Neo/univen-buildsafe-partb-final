@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Login | UNIVEN BuildSafe</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body class="auth-page">
+<div class="auth-card">
+  <div class="logo">UNIVEN<span>BuildSafe</span></div>
+  <h1>Welcome back</h1>
+  <p>Sign in to continue.</p>
+  <form id="loginForm">
+    <label>Email</label>
+    <input id="email" type="email" required placeholder="Enter email">
+    <label>Password</label>
+    <input id="password" type="password" required placeholder="Enter password">
+    <button class="btn full" type="submit">Login</button>
+    <p id="error" class="error"></p>
+  </form>
+  <div class="demo">
+    <b>Demo accounts</b><br>
+    Admin: admin@univen.ac.za / admin123<br>
+    Student: student@univen.ac.za / student123
+  </div>
+</div>
+<script src="js/login.js"></script>
+</body>
+</html>

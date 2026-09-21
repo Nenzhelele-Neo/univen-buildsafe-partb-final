@@ -1,0 +1,15 @@
+[
+  { "id": 1, "name": "UNIVEN Main Library", "type": "Building", "latitude": -22.9764, "longitude": 30.4422 },
+  { "id": 2, "name": "Science Faculty Building", "type": "Building", "latitude": -22.9775, "longitude": 30.4385 },
+  { "id": 3, "name": "Student Residence Block G", "type": "Building", "latitude": -22.9743, "longitude": 30.4480 },
+  { "id": 4, "name": "Main Gate Access Pathway", "type": "Route", "latitude": -22.9818, "longitude": 30.4425 },
+  { "id": 5, "name": "Faculty of Health Sciences", "type": "Building", "latitude": -22.9753, "longitude": 30.4465 },
+  { "id": 6, "name": "Sports Fields Entrance Road", "type": "Route", "latitude": -22.9737, "longitude": 30.4489 },
+  { "id": 7, "name": "Freedom Square Common Area", "type": "Area", "latitude": -22.9758, "longitude": 30.4440 },
+  { "id": 8, "name": "Main Gate / Punda Maria Junction", "type": "Junction", "latitude": -22.9818, "longitude": 30.4425 },
+  { "id": 9, "name": "Central Campus Junction", "type": "Junction", "latitude": -22.9766, "longitude": 30.4448 },
+  { "id": 10, "name": "Library Campus Junction", "type": "Junction", "latitude": -22.9764, "longitude": 30.4422 },
+  { "id": 11, "name": "Science Faculty Junction", "type": "Junction", "latitude": -22.9774, "longitude": 30.4386 },
+  { "id": 12, "name": "Health Sciences Junction", "type": "Junction", "latitude": -22.9750, "longitude": 30.4473 },
+  { "id": 13, "name": "Sports Fields Access Junction", "type": "Junction", "latitude": -22.9743, "longitude": 30.4482 }
+]

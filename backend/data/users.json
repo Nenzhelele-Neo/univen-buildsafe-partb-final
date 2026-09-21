@@ -1,0 +1,16 @@
+[
+  {
+    "id": 1,
+    "name": "System Administrator",
+    "email": "admin@univen.ac.za",
+    "password": "admin123",
+    "role": "admin"
+  },
+  {
+    "id": 2,
+    "name": "UNIVEN Student",
+    "email": "student@univen.ac.za",
+    "password": "student123",
+    "role": "student"
+  }
+]

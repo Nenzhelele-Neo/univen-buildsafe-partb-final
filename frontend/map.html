@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Campus Map | UNIVEN BuildSafe</title>
+<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/routing.css">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+</head>
+<body>
+<header class="topbar">
+  <div class="logo">UNIVEN<span>BuildSafe</span></div>
+  <nav><a href="dashboard.html">Dashboard</a><a class="active" href="map.html">Map</a><a href="projects.html">Projects</a><a href="report.html">Report</a><button id="logout" class="link-button">Logout</button></nav>
+</header>
+<main class="container">
+  <div class="section-title"><div><p class="tag">INTERACTIVE MAP</p><h1>Construction Areas</h1></div></div>
+  <div class="map-layout">
+    <div id="map"></div>
+    <aside class="map-info">
+      <h2>Project status</h2>
+      <p><span class="dot red"></span> In Progress</p>
+      <p><span class="dot yellow"></span> Planned</p>
+      <p><span class="dot green"></span> Completed</p>
+      <hr>
+      <p>Click a marker to view project information.</p>
+      <button id="openRoutePanel" class="btn map-plan-button" type="button" aria-controls="routeForm" aria-expanded="false">Plan Safe Route</button>
+      <div class="route-info-note"><span class="info-icon" aria-hidden="true">i</span>Campus route guidance may use approximate mapped locations and may not reflect temporary access changes.</div>
+    </aside>
+    <form id="routeForm" class="route-control-panel" hidden>
+      <div class="route-panel-heading">
+        <h3>Safe Route</h3>
+        <button id="closeRoutePanel" class="route-panel-close" type="button">Close</button>
+      </div>
+      <div class="route-fields">
+        <label class="route-field" for="fromLoc">From
+          <select id="fromLoc" required>
+            <option value="">Select location</option>
+          </select>
+        </label>
+        <label class="route-field" for="toLoc">Destination
+          <select id="toLoc" required>
+            <option value="">Select location</option>
+          </select>
+        </label>
+      </div>
+      <fieldset class="route-mode">
+        <legend>Travel mode</legend>
+        <div class="route-mode-options">
+          <label><input type="radio" name="routeMode" value="walking" checked><span>Walking</span></label>
+          <label><input type="radio" name="routeMode" value="vehicle"><span>Vehicle</span></label>
+        </div>
+      </fieldset>
+      <div class="route-actions">
+        <button class="btn" type="submit">Find Safe Route</button>
+        <button id="clearRouteBtn" class="btn secondary" type="button">Clear Route</button>
+      </div>
+      <p id="routeStatus" class="route-status" aria-live="polite"></p>
+    </form>
+  </div>
+</main>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<script src="js/common.js"></script>
+
+<script src="js/map.js"></script>
+
+</body>
+</html>

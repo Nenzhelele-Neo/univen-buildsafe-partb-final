@@ -1,0 +1,17 @@
+[
+  {
+    "id": 1790001700061,
+    "title": "Safety Report: near",
+    "category": "Water Supply / Damage",
+    "location": "near",
+    "message": "broken water pipes",
+    "date": "2026-09-21",
+    "sourceReportId": 1789639726288
+  },
+  {
+    "id": 1,
+    "title": "Construction Notice",
+    "message": "Please use alternative walkways around active construction areas.",
+    "date": "2026-09-13"
+  }
+]

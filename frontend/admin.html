@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin | UNIVEN BuildSafe</title><link rel="stylesheet" href="css/style.css"><link rel="stylesheet" href="css/routing.css"><link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+</head>
+<body>
+<header class="topbar"><div class="logo">UNIVEN<span>BuildSafe</span></div><nav><a href="dashboard.html">Dashboard</a><a href="map.html">Map</a><a href="projects.html">Projects</a><a href="announcements.html">Notices</a><a class="active" href="admin.html">Admin</a><button id="logout" class="link-button">Logout</button></nav></header>
+<main class="container">
+<p class="tag">ADMINISTRATION</p><h1>Manage System</h1>
+<div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:20px;">
+<button id="showProjectForm" class="btn" type="button">+ Add Construction Project</button>
+<button id="showNoticeForm" class="btn" type="button">+ Create Notice</button>
+</div>
+<div class="admin-grid">
+<form id="projectForm" class="form-card" style="display:none;">
+<h2>Add Construction Project</h2>
+<input id="name" placeholder="Project name" required>
+<textarea id="description" placeholder="Description" required></textarea>
+<input id="location" placeholder="Location" required>
+<div class="location-choice-row"><div><label for="projectCampusLocation">Campus location</label><select id="projectCampusLocation"><option value="">Choose a known campus location</option></select></div><button id="pickProjectLocation" class="btn secondary" type="button">Pick Exact Point</button></div>
+<p id="projectLocationStatus" class="location-selection-status" aria-live="polite">No map point selected.</p>
+<select id="status"><option>Planned</option><option>In Progress</option><option>Completed</option><option>Delayed</option></select>
+<input id="startDate" type="date" required><input id="endDate" type="date" required>
+<input id="affectedArea" placeholder="Affected area" required>
+<input id="latitude" type="hidden">
+<input id="longitude" type="hidden">
+<button class="btn" type="submit">Add Project</button>
+<button id="cancelProjectForm" class="btn secondary" type="button">Cancel</button><p id="projectMessage"></p>
+</form>
+<form id="announcementForm" class="form-card" style="display:none;">
+<h2>Create Notice</h2>
+<input id="title" placeholder="Notice title" required>
+<textarea id="announcementMessage" placeholder="Notice message" required></textarea>
+<button class="btn" type="submit">Publish Notice</button>
+<button id="cancelNoticeForm" class="btn secondary" type="button">Cancel</button><p id="announcementMessageResult"></p>
+</form>
+</div>
+<h2>Existing Projects</h2><div id="adminProjects" class="cards"></div>
+<h2>Student Reports</h2><div id="reports" class="notice-list"></div>
+</main>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="js/common.js"></script>
+<script src="js/location-picker.js"></script>
+<script src="js/admin.js"></script>
+</body>
+</html>

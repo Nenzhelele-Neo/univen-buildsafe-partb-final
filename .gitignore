@@ -1,0 +1,10 @@
+node_modules/
+.env
+*.log
+
+backend/uploads/*
+!backend/uploads/.gitkeep
+
+opencode.json
+opencode.jsonc
+.opencode/
