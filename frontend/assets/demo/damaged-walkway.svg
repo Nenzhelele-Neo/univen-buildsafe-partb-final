@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360" role="img" aria-labelledby="title description">
+  <title id="title">Damaged walkway illustration</title>
+  <desc id="description">A cracked pedestrian walkway with a safety warning sign.</desc>
+  <rect width="640" height="360" fill="#cce2c0"/><path d="M120 360 245 105h150l125 255z" fill="#c8ccd2" stroke="#667085" stroke-width="5"/>
+  <path d="m321 105-30 66 47 30-52 54 42 30-36 75" fill="none" stroke="#344054" stroke-width="9"/>
+  <path d="m482 86-76 132h152z" fill="#f5c542" stroke="#172033" stroke-width="6"/><path d="M482 126v50m0 18v8" stroke="#172033" stroke-width="12"/>
+  <g fill="#fff" stroke="#172033" stroke-width="4"><circle cx="105" cy="118" r="18"/><path d="M105 137v64m0-38-35 34m35-34 38 28m-38 10-27 54m27-54 34 54" fill="none" stroke-width="10"/></g>
+  <text x="28" y="45" fill="#172033" font-family="Arial, sans-serif" font-size="28" font-weight="700">DAMAGED WALKWAY</text>
+</svg>

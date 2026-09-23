@@ -18,12 +18,13 @@ async function loadDashboard() {
   document.getElementById("projectCards").innerHTML = projects.slice(0,3).map(p => `
     <article class="card">
       <span class="badge">${p.status}</span> <span class="badge">${p.workType}</span>
+      ${p.photoUrl ? `<img class="report-photo-preview" src="${p.photoUrl}" alt="Illustration for ${p.name}">` : ""}
       <h3>${p.name}</h3><p>${p.description}</p>
       <small>📍 ${p.location}</small>
     </article>`).join("");
 
   document.getElementById("notices").innerHTML = announcements.slice(0,3).map(a => `
-    <article class="notice"><h3>${a.title}</h3>${a.category ? `<p><b>Category:</b> ${a.category}</p>` : ""}${a.location ? `<p><b>Location:</b> ${a.location}</p>` : ""}<p>${a.message}</p><small>${a.date}</small></article>
+    <article class="notice">${a.photoUrl ? `<img class="report-photo-preview" src="${a.photoUrl}" alt="Illustration for ${a.title}">` : ""}<h3>${a.title}</h3>${a.category ? `<p><b>Category:</b> ${a.category}</p>` : ""}${a.location ? `<p><b>Location:</b> ${a.location}</p>` : ""}<p>${a.message}</p><small>${a.date}</small></article>
   `).join("");
 }
 loadDashboard();

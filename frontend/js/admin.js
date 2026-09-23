@@ -234,6 +234,7 @@ async function loadAdmin() {
     <article class="card">
       <span class="badge">${p.status}</span> <span class="badge">${p.workType}</span>
       ${!hasValidCampusPoint(p.latitude, p.longitude) ? '<span class="badge map-warning">Map location required</span>' : ""}<h3>${p.name}</h3>
+      ${p.photoUrl ? `<a href="${p.photoUrl}" target="_blank" rel="noopener"><img class="report-photo-preview" src="${p.photoUrl}" alt="Illustration for ${p.name}"></a>` : ""}
       <p>${p.location}</p>
       ${p.sourceReportId ? '<small>Managed from Student Reports.</small>' : ""}
 

@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360" role="img" aria-labelledby="title description">
+  <title id="title">Electrical maintenance illustration</title>
+  <desc id="description">An electrical warning symbol beside campus maintenance equipment.</desc>
+  <rect width="640" height="360" fill="#172033"/><circle cx="320" cy="190" r="125" fill="#243b61" stroke="#8ed0ff" stroke-width="6"/>
+  <path d="M320 73 205 282h230z" fill="#f5c542" stroke="#fff" stroke-width="7"/>
+  <path d="m337 112-72 105h51l-18 70 78-114h-52z" fill="#172033"/>
+  <g fill="none" stroke="#8ed0ff" stroke-width="9"><path d="M95 100h78v78H95zM467 190h78v78h-78z"/><path d="M134 100V55m372 135v-45"/></g>
+  <text x="28" y="45" fill="#fff" font-family="Arial, sans-serif" font-size="28" font-weight="700">ELECTRICAL MAINTENANCE</text>
+</svg>
