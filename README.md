@@ -66,7 +66,7 @@ BuildSafe is a campus construction-awareness system for viewing projects, publis
 
    The schema command creates `DB_NAME` if permitted and missing, then applies `database/schema.sql`. It verifies required columns, ID types, generated IDs, date/geometry types, indexes, foreign keys, and InnoDB support. MySQL DDL commits independently; seeding is a separate transaction.
 
-   **Existing hybrid databases:** back up the database first. This bootstrap does not drop, rebuild, or automatically alter existing tables. An incompatible legacy schema produces an error. Use a new `DB_NAME` for a clean setup, or explicitly upgrade the backed-up schema before importing existing data. The bundled seed files cannot recover records that exist only in an old database.
+   **Existing hybrid databases:** back up the database first. Schema setup applies the defined additive compatibility upgrades but never drops or rebuilds existing tables. An incompatible legacy schema produces an error. The bundled seed files cannot recover records that exist only in an old database.
 
 5. Start the application:
 
@@ -85,6 +85,24 @@ After seeding:
 
 These are demonstration accounts. This migration preserves the existing plaintext-password login and browser-side role checks; server-side authentication/authorization and HTML escaping remain separate security work before deployment with real users.
 
+## Presentation Demo
+
+From `backend`, run `npm run demo:reset` before presenting. This repeatable command replaces only reports, Campus Work, and notices; it preserves users, campus locations, and the route graph. It also removes report-upload files that are no longer referenced by SQL.
+
+1. Log in as the Student demo account and open the Dashboard.
+2. Open Projects to show Construction and Maintenance Campus Work with local illustrations.
+3. Open the Map and show the red Construction, orange Maintenance, and blue Campus Notice markers.
+4. Click each marker to show its image and publication details.
+5. Plan a walking route from **UNIVEN Main Library** to **Freedom Square Common Area**. The active library construction changes the normal route to the safe alternative.
+6. Submit a Student Report with a map point and optional photo.
+7. Log out, then log in as the Admin demo account.
+8. Review the seeded Pending Road / Walkway report or the newly submitted report.
+9. Publish it as either Campus Work or a Campus Notice.
+10. Return to the Map and Dashboard; use tab focus or wait about 30 seconds to show the automatic marker refresh.
+11. Mark linked Campus Work Completed and show that its active marker and construction routing effect are removed.
+
+The non-map **Campus Water Supply Update** remains visible on the Dashboard and Notices page without creating a map marker.
+
 ## Storage and relationships
 
 MySQL is the authoritative store for users, projects, reports, announcements, campus locations, and routes. Application requests do not read or write the seed files.
@@ -102,7 +120,7 @@ MySQL is the authoritative store for users, projects, reports, announcements, ca
 
 `npm run db:seed` imports all six seed files in one transaction. It preserves categories, coordinates, photo URLs, publication fields/links, campus location types, and route geometry/affected areas.
 
-- The empty object in the supplied project seed is skipped with a warning. Other malformed records fail the import.
+- Malformed seed records fail the import; valid existing IDs are preserved.
 - Existing IDs are skipped, preserving subsequent edits. Repeating the import does not duplicate rows. Reseeding can restore deleted seed records, so use it deliberately rather than at every startup.
 - A uniqueness conflict or invalid foreign key fails and rolls back the entire import. Failures return a nonzero exit code.
 - One bundled legacy report is already marked Approved but has no publication metadata. It is retained with a warning. An administrator must review and publish it; the importer does not invent missing content.
@@ -151,8 +169,10 @@ backend/
   data/                  # optional seed/reference files
   uploads/               # local report images
   scripts/
+    demo-reset.js         # repeatable presentation dataset
   test/
 frontend/
+  assets/demo/            # local presentation illustrations
   css/
   js/
   *.html

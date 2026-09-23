@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360" role="img" aria-labelledby="title description">
+  <title id="title">Water supply illustration</title>
+  <desc id="description">A water droplet and campus pipe representing a supply update.</desc>
+  <defs><linearGradient id="water" x2="0" y2="1"><stop stop-color="#8ed0ff"/><stop offset="1" stop-color="#1473b8"/></linearGradient></defs>
+  <rect width="640" height="360" fill="#eaf6ff"/><path d="M330 75c-22 43-88 115-88 169a88 88 0 0 0 176 0c0-54-66-126-88-169z" fill="url(#water)" stroke="#0b4f7d" stroke-width="6"/>
+  <path d="M68 160h135v44H68zm369 0h135v44H437z" fill="#98a2b3" stroke="#344054" stroke-width="5"/><circle cx="330" cy="240" r="38" fill="#fff" opacity=".25"/>
+  <text x="28" y="45" fill="#172033" font-family="Arial, sans-serif" font-size="28" font-weight="700">WATER SUPPLY UPDATE</text>
+</svg>

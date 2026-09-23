@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360" role="img" aria-labelledby="title description">
+  <title id="title">Construction work illustration</title>
+  <desc id="description">A campus building, safety barrier, and construction crane.</desc>
+  <defs><linearGradient id="sky" x2="0" y2="1"><stop stop-color="#b9dcf5"/><stop offset="1" stop-color="#eef6fb"/></linearGradient></defs>
+  <rect width="640" height="360" fill="url(#sky)"/><rect y="275" width="640" height="85" fill="#697386"/>
+  <rect x="355" y="112" width="205" height="163" rx="4" fill="#e7eaf0" stroke="#344054" stroke-width="5"/>
+  <g fill="#79b9df"><rect x="382" y="140" width="48" height="42"/><rect x="460" y="140" width="48" height="42"/><rect x="382" y="205" width="48" height="42"/><rect x="460" y="205" width="48" height="42"/></g>
+  <path d="M125 275V66h18v209M134 78h210v17H134m145 0v115" fill="none" stroke="#d79a12" stroke-width="12"/>
+  <path d="m279 210-28 53h56z" fill="#f5b82e" stroke="#172033" stroke-width="4"/>
+  <g stroke="#fff" stroke-width="10"><path d="M45 306h120M210 306h120M375 306h120"/></g>
+  <g><rect x="58" y="245" width="260" height="34" rx="4" fill="#e87518"/><path d="M75 247l30 30m45-30 30 30m45-30 30 30" stroke="#fff" stroke-width="10"/></g>
+  <text x="28" y="45" fill="#172033" font-family="Arial, sans-serif" font-size="28" font-weight="700">CAMPUS CONSTRUCTION</text>
+</svg>

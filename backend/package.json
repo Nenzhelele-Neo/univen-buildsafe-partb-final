@@ -8,6 +8,7 @@
     "db:schema": "node database/setup.js",
     "db:seed": "node database/seed.js",
     "db:setup": "npm run db:schema && npm run db:seed",
+    "demo:reset": "node scripts/demo-reset.js",
     "check": "node scripts/check.js",
     "test": "node --test test/*.test.js",
     "test:mysql": "node --test test/mysql.integration.js"
