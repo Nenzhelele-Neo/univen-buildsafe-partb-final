@@ -8,3 +8,5 @@ backend/uploads/*
 opencode.json
 opencode.jsonc
 .opencode/
+backend/node_modules/
+backend/.env
