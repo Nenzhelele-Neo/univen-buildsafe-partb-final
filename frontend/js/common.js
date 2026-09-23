@@ -8,3 +8,8 @@ function logout() {
   location.href = "login.html";
 }
 document.querySelectorAll("#logout").forEach(btn => btn.addEventListener("click", logout));
+
+const currentUser = JSON.parse(localStorage.getItem("user") || "null");
+document.querySelectorAll("[data-admin-link]").forEach(link => {
+  link.hidden = currentUser?.role !== "admin";
+});

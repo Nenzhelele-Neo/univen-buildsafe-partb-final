@@ -23,6 +23,14 @@ const noticeLocationStatus = document.getElementById("noticeLocationStatus");
 const noticeShowOnMap = document.getElementById("noticeShowOnMap");
 let campusLocations = [];
 
+function formatAdminDate(value) {
+  if (!value) return "";
+  const date = new Date(value.length === 10 ? `${value}T00:00:00` : value);
+  return Number.isNaN(date.getTime()) ? value : new Intl.DateTimeFormat("en-ZA", {
+    day: "numeric", month: "short", year: "numeric"
+  }).format(date);
+}
+
 function knownLocationForCoordinates(latitude, longitude) {
   if (latitude === "" || longitude === "" || latitude == null || longitude == null) return null;
   return campusLocations.find(location =>
@@ -230,21 +238,21 @@ async function loadAdmin() {
   projectCampusLocation.innerHTML = campusLocationOptions();
   noticeCampusLocation.innerHTML = campusLocationOptions();
 
-  document.getElementById("adminProjects").innerHTML = projects.map(p => `
-    <article class="card">
-      <span class="badge">${p.status}</span> <span class="badge">${p.workType}</span>
-      ${!hasValidCampusPoint(p.latitude, p.longitude) ? '<span class="badge map-warning">Map location required</span>' : ""}<h3>${p.name}</h3>
-      ${p.photoUrl ? `<a href="${p.photoUrl}" target="_blank" rel="noopener"><img class="report-photo-preview" src="${p.photoUrl}" alt="Illustration for ${p.name}"></a>` : ""}
+  document.getElementById("adminProjects").innerHTML = projects.length ? projects.map(p => `
+    <article class="admin-record">
+      <div class="record-topline"><span class="status-badge" data-status="${p.status}">${p.status}</span><span class="work-type">${p.workType}</span>${!hasValidCampusPoint(p.latitude, p.longitude) ? '<span class="badge map-warning">Map location required</span>' : ""}</div>
+      <h3>${p.name}</h3>
+      ${p.photoUrl ? `<a href="${p.photoUrl}" target="_blank" rel="noopener" aria-label="Open photo for ${p.name} in a new tab"><img class="report-photo-preview" src="${p.photoUrl}" alt="Photo for ${p.name}"></a>` : ""}
       <p>${p.location}</p>
       ${p.sourceReportId ? '<small>Managed from Student Reports.</small>' : ""}
 
       ${p.id != editingProjectId ? `
-        <div style="margin-top: 12px;">
-          <button class="btn" onclick="editProject(${p.id})">Edit</button>
-          <button class="btn danger" onclick="deleteProject(${p.id}, ${p.sourceReportId || "null"})">Delete</button>
+        <div class="record-actions">
+          <button class="btn secondary" type="button" onclick="editProject(${p.id})">Edit</button>
+          <button class="btn danger" type="button" onclick="deleteProject(${p.id}, ${p.sourceReportId || "null"})">Delete</button>
         </div>
       ` : `
-        <div class="form-card" style="margin-top: 12px;">
+        <div class="form-card editor-panel">
           <label for="project-edit-work-type-${p.id}">Work Type</label>
           <select id="project-edit-work-type-${p.id}"><option>Construction</option><option>Maintenance</option></select>
           <label for="project-edit-name-${p.id}">Project name</label>
@@ -270,11 +278,13 @@ async function loadAdmin() {
           <input id="project-edit-latitude-${p.id}" type="hidden">
           <input id="project-edit-longitude-${p.id}" type="hidden">
           <p id="project-edit-message-${p.id}" class="error"></p>
-          <button class="btn" onclick="saveProject(${p.id})">Save Changes</button>
-          <button class="btn secondary" onclick="cancelProjectEdit()">Cancel</button>
+          <div class="form-actions">
+            <button class="btn" type="button" onclick="saveProject(${p.id})">Save changes</button>
+            <button class="btn tertiary" type="button" onclick="cancelProjectEdit()">Cancel</button>
+          </div>
         </div>
       `}
-    </article>`).join("");
+    </article>`).join("") : '<p class="empty">No campus work has been published.</p>';
 
   const editingProject = projects.find(project => project.id == editingProjectId);
   if (editingProject) {
@@ -291,24 +301,23 @@ async function loadAdmin() {
   }
 
   document.getElementById("reports").innerHTML = reports.length ? reports.map(r => `
-    <article class="notice report-item">
+    <article class="admin-record report-item">
+      <div class="record-heading"><div><span class="status-badge" data-status="${r.status}">${r.status}</span></div><time class="record-date" datetime="${r.date}">${formatAdminDate(r.date)}</time></div>
       <h3>Original submission: ${r.location}</h3>
-      <p><b>Original category:</b> ${r.category || "Not recorded"}</p>
+      <div class="record-topline"><span>${r.category || "Category not recorded"}</span><span>Submitted by ${r.name}</span></div>
       <p>${r.description}</p>
-      ${r.photoUrl ? `<a href="${r.photoUrl}" target="_blank" rel="noopener"><img class="report-photo-preview" src="${r.photoUrl}" alt="Photo submitted with this report"></a>` : ""}
-
-      <small>By ${r.name} on ${r.date} — ${r.status}</small>
+      ${r.photoUrl ? `<a href="${r.photoUrl}" target="_blank" rel="noopener" aria-label="Open the submitted report photo in a new tab"><img class="report-photo-preview" src="${r.photoUrl}" alt="Photo submitted with this report"></a>` : ""}
 
       ${r.status !== "Pending" && r.id != editingReportId ? `
-        <div style="margin-top: 12px;">
-          <button class="btn" onclick="editReport(${r.id})">Edit</button>
-          <button class="btn danger" onclick="deleteReport(${r.id})">Delete</button>
-          ${r.status === "Approved" && r.publishedType === "project" ? `<button class="btn" onclick="markReportComplete(${r.id})">Mark Complete</button>` : ""}
+        <div class="record-actions">
+          <button class="btn secondary" type="button" onclick="editReport(${r.id})">Edit</button>
+          ${r.status === "Approved" && r.publishedType === "project" ? `<button class="btn" type="button" onclick="markReportComplete(${r.id})">Mark complete</button>` : ""}
+          <button class="btn danger" type="button" onclick="deleteReport(${r.id})">Delete</button>
         </div>
       ` : ""}
 
       ${r.status === "Pending" || r.id == editingReportId ? `
-      <div id="report-editor-${r.id}" class="form-card" style="margin-top: 12px;">
+      <div id="report-editor-${r.id}" class="form-card editor-panel">
         <h3>Publication</h3>
         <label for="report-publication-type-${r.id}">Publish as</label>
         <select id="report-publication-type-${r.id}" onchange="updatePublicationFields(${r.id})">
@@ -352,24 +361,26 @@ async function loadAdmin() {
 
         <p id="report-edit-message-${r.id}" class="error"></p>
 
+        <div class="form-actions">
         ${r.status === "Pending" ? `
-          <button class="btn"
+          <button class="btn" type="button"
             onclick="updateReportStatus(${r.id}, 'Approved')">
             Approve &amp; Publish
           </button>
 
-          <button class="btn danger"
+          <button class="btn danger" type="button"
             onclick="updateReportStatus(${r.id}, 'Rejected')">
             Reject
           </button>
         ` : ""}
-        ${r.status === "Approved" ? `<button class="btn" onclick="updateReportStatus(${r.id}, 'Approved')">Save Published Changes</button>` : ""}
+        ${r.status === "Approved" ? `<button class="btn" type="button" onclick="updateReportStatus(${r.id}, 'Approved')">Save published changes</button>` : ""}
         ${r.status === "Rejected" ? `
-          <button class="btn" onclick="updateReportStatus(${r.id}, 'Rejected')">Save Changes</button>
-          <button class="btn" onclick="updateReportStatus(${r.id}, 'Approved')">Approve &amp; Publish</button>
+          <button class="btn secondary" type="button" onclick="updateReportStatus(${r.id}, 'Rejected')">Save changes</button>
+          <button class="btn" type="button" onclick="updateReportStatus(${r.id}, 'Approved')">Approve &amp; Publish</button>
         ` : ""}
-        ${r.status === "Completed" ? `<button class="btn" onclick="updateReportStatus(${r.id}, 'Completed')">Save Published Changes</button>` : ""}
-        ${r.status !== "Pending" ? `<button class="btn secondary" onclick="cancelReportEdit(${r.id})">Cancel</button>` : ""}
+        ${r.status === "Completed" ? `<button class="btn" type="button" onclick="updateReportStatus(${r.id}, 'Completed')">Save published changes</button>` : ""}
+        ${r.status !== "Pending" ? `<button class="btn tertiary" type="button" onclick="cancelReportEdit(${r.id})">Cancel</button>` : ""}
+        </div>
       </div>
       ` : ""}
     </article>
@@ -641,4 +652,7 @@ async function deleteProject(id, sourceReportId) {
 }
 setActiveAdminForm(null);
 updateDirectNoticeMapFields();
-loadAdmin();
+loadAdmin().catch(() => {
+  document.getElementById("adminProjects").innerHTML = '<p class="empty error">Campus work could not be loaded.</p>';
+  document.getElementById("reports").innerHTML = '<p class="empty error">Student reports could not be loaded.</p>';
+});

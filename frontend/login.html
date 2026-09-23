@@ -7,24 +7,25 @@
 <link rel="stylesheet" href="css/style.css">
 </head>
 <body class="auth-page">
-<div class="auth-card">
-  <div class="logo">UNIVEN<span>BuildSafe</span></div>
-  <h1>Welcome back</h1>
-  <p>Sign in to continue.</p>
+<a class="skip-link" href="#main-content">Skip to main content</a>
+<main id="main-content" class="auth-card">
+  <a class="logo" href="index.html" aria-label="UNIVEN BuildSafe home">UNIVEN<span>BuildSafe</span></a>
+  <h1>Sign in to BuildSafe</h1>
+  <p>Access campus work, safety notices, route guidance, and reporting.</p>
   <form id="loginForm">
-    <label>Email</label>
-    <input id="email" type="email" required placeholder="Enter email">
-    <label>Password</label>
-    <input id="password" type="password" required placeholder="Enter password">
+    <label for="email">Email address</label>
+    <input id="email" type="email" required autocomplete="email" placeholder="name@univen.ac.za">
+    <label for="password">Password</label>
+    <input id="password" type="password" required autocomplete="current-password" placeholder="Enter your password">
     <button class="btn full" type="submit">Login</button>
-    <p id="error" class="error"></p>
+    <p id="error" class="error" role="alert" aria-live="assertive"></p>
   </form>
-  <div class="demo">
+  <aside class="demo" aria-label="Demonstration accounts">
     <b>Demo accounts</b><br>
     Admin: admin@univen.ac.za / admin123<br>
     Student: student@univen.ac.za / student123
-  </div>
-</div>
+  </aside>
+</main>
 <script src="js/login.js"></script>
 </body>
 </html>

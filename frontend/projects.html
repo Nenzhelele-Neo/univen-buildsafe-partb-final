@@ -5,10 +5,11 @@
 <title>Campus Work | UNIVEN BuildSafe</title><link rel="stylesheet" href="css/style.css"><link rel="stylesheet" href="css/routing.css">
 </head>
 <body>
-<header class="topbar"><div class="logo">UNIVEN<span>BuildSafe</span></div><nav><a href="dashboard.html">Dashboard</a><a href="map.html">Map</a><a class="active" href="projects.html">Projects</a><a href="announcements.html">Notices</a><a href="report.html">Report</a><button id="logout" class="link-button">Logout</button></nav></header>
-<main class="container">
-<p class="tag">CAMPUS WORK</p><h1>Construction and Maintenance</h1>
-<div id="projects" class="cards"></div>
+<a class="skip-link" href="#main-content">Skip to main content</a>
+<header class="topbar"><a class="logo" href="dashboard.html" aria-label="UNIVEN BuildSafe dashboard">UNIVEN<span>BuildSafe</span></a><nav aria-label="Primary navigation"><a href="dashboard.html">Dashboard</a><a href="map.html">Map</a><a class="active" aria-current="page" href="projects.html">Projects</a><a href="announcements.html">Notices</a><a href="report.html">Report</a><a data-admin-link href="admin.html" hidden>Admin</a><button id="logout" class="link-button">Logout</button></nav></header>
+<main id="main-content" class="container">
+<header class="page-header"><div><p class="tag">Campus work register</p><h1>Construction and maintenance</h1><p>Published work that may affect movement, facilities, or access across campus.</p></div></header>
+<div id="projects" class="work-list"><p class="empty">Loading campus work...</p></div>
 </main>
 
 <script src="js/common.js"></script>

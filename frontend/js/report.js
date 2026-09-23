@@ -81,6 +81,9 @@ reportForm.addEventListener("submit", async event => {
   }
   if (photo) formData.append("photo", photo);
 
+  const submitButton = event.submitter || reportForm.querySelector('button[type="submit"]');
+  submitButton.disabled = true;
+  submitButton.textContent = "Submitting...";
   try {
     const response = await fetch("/api/reports", { method: "POST", body: formData });
     const result = await response.json();
@@ -95,5 +98,8 @@ reportForm.addEventListener("submit", async event => {
   } catch (error) {
     reportMessage.textContent = error.message;
     reportMessage.className = "error";
+  } finally {
+    submitButton.disabled = false;
+    submitButton.textContent = "Submit report";
   }
 });

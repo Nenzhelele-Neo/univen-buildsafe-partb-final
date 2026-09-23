@@ -8,24 +8,25 @@
 <link rel="stylesheet" href="css/routing.css">
 </head>
 <body>
+<a class="skip-link" href="#main-content">Skip to main content</a>
 <header class="topbar">
-  <div class="logo">UNIVEN<span>BuildSafe</span></div>
-  <nav>
-    <a href="dashboard.html">Dashboard</a>
+  <a class="logo" href="dashboard.html" aria-label="UNIVEN BuildSafe dashboard">UNIVEN<span>BuildSafe</span></a>
+  <nav aria-label="Primary navigation">
+    <a class="active" aria-current="page" href="dashboard.html">Dashboard</a>
     <a href="map.html">Map</a>
     <a href="projects.html">Projects</a>
     <a href="announcements.html">Notices</a>
     <a href="report.html">Report</a>
-    <a id="adminLink" href="admin.html" hidden>Admin</a>
+    <a id="adminLink" data-admin-link href="admin.html" hidden>Admin</a>
     <button id="logout" class="link-button">Logout</button>
   </nav>
 </header>
-<main class="container">
+<main id="main-content" class="container">
   <section class="welcome">
     <div>
-      <p class="tag">UNIVEN CAMPUS</p>
+      <p class="tag">Campus operations overview</p>
       <h1 id="welcome">Welcome</h1>
-      <p>Monitor campus work and stay informed about affected campus areas.</p>
+      <p>Review active campus work, current notices, and safe route information.</p>
     </div>
     <div class="welcome-actions">
       <a class="btn secondary" href="map.html">Open Campus Map</a>
@@ -33,21 +34,21 @@
     </div>
   </section>
 
-  <section class="stats">
-    <div class="stat"><span id="totalProjects">0</span><small>Total Campus Work</small></div>
-    <div class="stat"><span id="activeProjects">0</span><small>In Progress</small></div>
-    <div class="stat"><span id="plannedProjects">0</span><small>Planned</small></div>
-    <div class="stat"><span id="reportCount">0</span><small>Approved Reports</small></div>
+  <section class="stats" aria-label="Campus operations summary">
+    <div class="stat"><span id="totalProjects">&mdash;</span><small>Total campus work</small></div>
+    <div class="stat"><span id="activeProjects">&mdash;</span><small>In progress</small></div>
+    <div class="stat"><span id="plannedProjects">&mdash;</span><small>Planned</small></div>
+    <div class="stat"><span id="reportCount">&mdash;</span><small>Approved reports</small></div>
   </section>
 
-  <section>
+  <section class="page-section">
     <div class="section-title"><h2>Latest Campus Work</h2><a href="projects.html">View all</a></div>
-    <div id="projectCards" class="cards"></div>
+    <div id="projectCards" class="work-list"><p class="empty">Loading campus work...</p></div>
   </section>
 
-  <section>
+  <section class="page-section">
     <div class="section-title"><h2>Latest Notices</h2><a href="announcements.html">View all</a></div>
-    <div id="notices" class="notice-list"></div>
+    <div id="notices" class="notice-feed"><p class="empty">Loading notices...</p></div>
   </section>
 </main>
 

@@ -5,10 +5,14 @@
 <title>Report | UNIVEN BuildSafe</title><link rel="stylesheet" href="css/style.css"><link rel="stylesheet" href="css/routing.css"><link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 </head>
 <body>
-<header class="topbar"><div class="logo">UNIVEN<span>BuildSafe</span></div><nav><a href="dashboard.html">Dashboard</a><a href="map.html">Map</a><a href="projects.html">Projects</a><a href="announcements.html">Notices</a><a class="active" href="report.html">Report</a><button id="logout" class="link-button">Logout</button></nav></header>
-<main class="container narrow"><p class="tag">SAFETY REPORT</p><h1>Report a Campus Problem</h1>
+<a class="skip-link" href="#main-content">Skip to main content</a>
+<header class="topbar"><a class="logo" href="dashboard.html" aria-label="UNIVEN BuildSafe dashboard">UNIVEN<span>BuildSafe</span></a><nav aria-label="Primary navigation"><a href="dashboard.html">Dashboard</a><a href="map.html">Map</a><a href="projects.html">Projects</a><a href="announcements.html">Notices</a><a class="active" aria-current="page" href="report.html">Report</a><a data-admin-link href="admin.html" hidden>Admin</a><button id="logout" class="link-button">Logout</button></nav></header>
+<main id="main-content" class="container narrow"><header class="page-header"><div><p class="tag">Campus safety reporting</p><h1>Report a campus problem</h1><p>Provide enough detail for campus operations staff to assess and publish the issue.</p></div></header>
 <form id="reportForm" class="form-card" enctype="multipart/form-data">
-<label>Category</label>
+<fieldset class="form-section">
+<legend>Problem details</legend>
+<p class="form-section-description">Describe the issue and identify the person submitting the report.</p>
+<label for="category">Category</label>
 <select id="category" required>
 <option value="">Select category</option>
 <option>Construction</option>
@@ -19,17 +23,25 @@
 <option>Safety Hazard</option>
 <option>Other</option>
 </select>
-<label>Your name</label><input id="name"  required minlength="2" maxlength="100">
-<label for="location">Location</label><input id="location" required minlength="3" maxlength="150"
-       placeholder="e.g. Near Library">
-<div class="location-choice-row"><div><label for="reportCampusLocation">Campus location</label><select id="reportCampusLocation"><option value="">Choose a known campus location</option></select></div><button id="pickReportLocation" class="btn secondary" type="button">Pick Exact Point</button></div>
+<label for="name">Your name</label><input id="name" required minlength="2" maxlength="100" autocomplete="name">
+<label for="description">Description</label><textarea id="description" rows="6" required minlength="20" maxlength="500" placeholder="Describe what you observed and how it affects the area."></textarea>
+<small class="field-help">Use at least 20 characters. Include any immediate safety concern.</small>
+</fieldset>
+<fieldset class="form-section">
+<legend>Location</legend>
+<p class="form-section-description">Enter a clear location. Adding a map point helps campus staff find the issue.</p>
+<label for="location">Location</label><input id="location" required minlength="3" maxlength="150" placeholder="For example, near the library entrance">
+<div class="location-choice-row"><div><label for="reportCampusLocation">Known campus location</label><select id="reportCampusLocation"><option value="">Choose a known campus location</option></select></div><button id="pickReportLocation" class="btn secondary" type="button">Pick exact point</button></div>
 <p id="reportLocationStatus" class="location-selection-status" aria-live="polite">Adding a map point is optional.</p>
 <input id="latitude" type="hidden"><input id="longitude" type="hidden">
-<label for="description">Description</label><textarea id="description" rows="6" required minlength="10" maxlength="500"
-            placeholder="Describe the problem..."></textarea>
-<label for="photo">Photo (optional)</label><input id="photo" type="file" accept="image/jpeg,image/png,image/webp">
+</fieldset>
+<fieldset class="form-section">
+<legend>Evidence</legend>
+<p class="form-section-description">A photo is optional but can help staff assess the report.</p>
+<label for="photo">Photo</label><input id="photo" type="file" accept="image/jpeg,image/png,image/webp">
 <small class="field-help">JPEG, PNG, or WebP, up to 5 MB.</small>
-<button class="btn" type="submit">Submit Report</button><p id="message"></p>
+</fieldset>
+<div class="form-actions"><button class="btn" type="submit">Submit report</button></div><p id="message" role="status" aria-live="polite"></p>
 </form>
 </main>
 

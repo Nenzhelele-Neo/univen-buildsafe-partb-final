@@ -136,7 +136,7 @@ function refreshMapData() {
         if (!["Planned", "In Progress"].includes(project.status) || !["Construction", "Maintenance"].includes(project.workType)) return;
         const coordinates = validCoordinates(project);
         if (!isCampusCoordinate(coordinates, campusLocations)) return;
-        const color = project.workType === "Maintenance" ? "#e87518" : "#d92d20";
+        const color = project.workType === "Maintenance" ? "#e2a94b" : "#d96060";
         L.marker(coordinates, { icon: markerIcon(color) }).addTo(mapItemLayer).bindPopup(markerPopup(project, project.workType));
       });
       announcements.forEach(announcement => {
@@ -165,13 +165,13 @@ function drawRoute(result) {
 
   const line = L.polyline(coordinates, {
     className: "safe-route-line",
-    color: result.adjusted ? "#1473b8" : "#17854b",
+    color: result.adjusted ? "#1473b8" : "#54b982",
     weight: 6,
     opacity: 0.9,
     lineCap: "round",
     lineJoin: "round"
   }).addTo(routeLayer);
-  L.circleMarker(coordinates[0], { radius: 7, color: "#101828", fillColor: "#fff", fillOpacity: 1, weight: 3 }).addTo(routeLayer);
+  L.circleMarker(coordinates[0], { radius: 7, color: "#0f1c2a", fillColor: "#fff", fillOpacity: 1, weight: 3 }).addTo(routeLayer);
   L.circleMarker(coordinates[coordinates.length - 1], { radius: 7, color: "#1473b8", fillColor: "#1473b8", fillOpacity: 1, weight: 3 }).addTo(routeLayer);
   map.fitBounds(line.getBounds(), { padding: [45, 45] });
   const message = result.adjusted
