@@ -9,14 +9,16 @@ const { transaction } = require("../db");
 const validate = require("../validation");
 const read = filename => JSON.parse(fs.readFileSync(path.join(__dirname, "../data", filename), "utf8"));
 
-test("seeds retain geometry, junctions, timestamp links, and safely skip the empty object", () => {
+test("seeds retain geometry, junctions, timestamp links, and explicit work types", () => {
   const warnings = [];
   const seeds = loadSeeds(undefined, { warn: text => warnings.push(text) });
   assert.equal(seeds.projects.length, 2);
+  assert.equal(seeds.projects.find(item => item.name === "Road Maintenance").workType, "Maintenance");
+  assert.equal(seeds.projects.find(item => item.name === "Library Area Construction").workType, "Construction");
   assert.equal(seeds.campus_locations.filter(item => item.type === "Junction").length, 6);
   assert.equal(seeds.routes.length, 40);
   assert.equal(seeds.announcements.find(item => item.sourceReportId).sourceReportId, 1789639726288);
-  assert.ok(warnings.some(text => text.includes("empty projects.json")));
+  assert.equal(warnings.some(text => text.includes("empty projects.json")), false);
   assert.ok(JSON.parse(seeds.routes[5].affected_areas).length);
   assert.throws(() => normalizeSeed("projects", { id: 99 }), /missing name/);
   const report = normalizeSeed("reports", { id: 99, name: "Student", location: "Library", description: "Hazard", date: "2026-09-23", status: "Pending", category: "Construction", latitude: 0, longitude: 0, photoUrl: "/uploads/test.png" });
@@ -65,6 +67,25 @@ test("SQL route values and frontend dates normalize without losing zeros", () =>
   assert.throws(() => validate.date("2026-02-29"));
   assert.throws(() => validate.date("2026-09-23T00:00:00.000Z"));
   assert.deepEqual(validate.coordinates({ latitude: 0, longitude: 0 }), { latitude: 0, longitude: 0 });
+  assert.deepEqual(validate.announcement({ title: "Campus update", message: "Walkway reopened." }), {
+    title: "Campus update", category: null, location: null, message: "Walkway reopened.",
+    photoUrl: null, latitude: null, longitude: null, showOnMap: false
+  });
+  assert.throws(() => validate.announcement({ title: "Incomplete", message: "", latitude: 1 }), /invalid/i);
+  assert.throws(() => validate.announcement({ title: "Mapped", message: "Campus message", showOnMap: true }), /map point/i);
+  assert.equal(validate.project({ name: "Work", description: "Details", location: "Library", status: "Planned", workType: "Maintenance" }).workType, "Maintenance");
+  assert.ok(validate.REPORT_CATEGORIES.includes("Maintenance"));
+  assert.equal(validate.isCampusPoint(-22.9764, 30.4430, [{ latitude: -22.98, longitude: 30.44 }, { latitude: -22.97, longitude: 30.45 }]), true);
+  const original = { category: "Electrical", latitude: -22.9764, longitude: 30.4430 };
+  const notice = validate.publication({
+    status: "Approved", publishedType: "announcement", publishedCategory: "Water Supply / Damage",
+    publishedTitle: "Power interruption", publishedLocation: "Library Area",
+    publishedDescription: "Power interruption affecting the library.", publishedShowOnMap: true
+  }, original);
+  assert.equal(original.category, "Electrical");
+  assert.equal(notice.publishedType, "announcement");
+  assert.equal(notice.publishedCategory, "Water Supply / Damage");
+  assert.equal(notice.publishedLatitude, original.latitude);
 });
 
 test("failed multi-record operations roll back and release their connection", async () => {

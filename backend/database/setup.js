@@ -57,10 +57,66 @@ async function verifySchema(connection, database = config.database) {
   );
 }
 
+async function upgradeSchema(connection) {
+  const [[selected]] = await connection.query("SELECT DATABASE() AS name");
+  if (!selected?.name) throw new Error("No database selected for schema upgrade.");
+  const [columns] = await connection.execute(
+    "SELECT TABLE_NAME, COLUMN_NAME FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = ?", [selected.name]
+  );
+  const existing = table => new Set(columns.filter(column => column.TABLE_NAME === table).map(column => column.COLUMN_NAME));
+  const additions = {
+    reports: {
+      published_work_type: "VARCHAR(20) NULL AFTER published_category",
+      published_status: "VARCHAR(20) NULL AFTER published_work_type",
+      published_latitude: "DECIMAL(11,8) NULL AFTER published_end_date",
+      published_longitude: "DECIMAL(11,8) NULL AFTER published_latitude",
+      published_show_on_map: "BOOLEAN NULL AFTER published_longitude"
+    },
+    projects: { work_type: "VARCHAR(20) NOT NULL DEFAULT 'Construction' AFTER status" },
+    announcements: {
+      latitude: "DECIMAL(11,8) NULL AFTER date",
+      longitude: "DECIMAL(11,8) NULL AFTER latitude",
+      show_on_map: "BOOLEAN NOT NULL DEFAULT FALSE AFTER longitude"
+    }
+  };
+  const added = new Set();
+  for (const [table, definitions] of Object.entries(additions)) {
+    const tableColumns = existing(table);
+    for (const [column, definition] of Object.entries(definitions)) {
+      if (!tableColumns.has(column)) {
+        await connection.query(`ALTER TABLE \`${table}\` ADD COLUMN \`${column}\` ${definition}`);
+        added.add(`${table}.${column}`);
+      }
+    }
+  }
+  if (added.has("projects.work_type")) {
+    await connection.execute("UPDATE projects SET work_type = 'Maintenance' WHERE name = 'Road Maintenance'");
+    await connection.execute("UPDATE projects SET work_type = 'Construction' WHERE name = 'Library Area Construction'");
+  }
+  if (added.has("announcements.show_on_map")) {
+    await connection.execute("UPDATE announcements SET show_on_map = TRUE WHERE latitude IS NOT NULL AND longitude IS NOT NULL");
+  }
+  await connection.query(
+    `UPDATE reports r JOIN projects p ON p.source_report_id = r.id
+     SET r.published_category = NULL, r.published_work_type = p.work_type, r.published_status = p.status,
+         r.published_latitude = p.latitude, r.published_longitude = p.longitude,
+         r.published_show_on_map = NULL
+     WHERE r.published_type = 'project'`
+  );
+  await connection.query(
+    `UPDATE reports r JOIN announcements a ON a.source_report_id = r.id
+     SET r.published_work_type = NULL, r.published_status = NULL,
+         r.published_latitude = a.latitude, r.published_longitude = a.longitude,
+         r.published_show_on_map = a.show_on_map
+     WHERE r.published_type = 'announcement'`
+  );
+}
+
 async function applySchema(connection) {
   const schema = fs.readFileSync(path.join(__dirname, "schema.sql"), "utf8");
   const statements = schema.replace(/^\s*--.*$/gm, "").split(";").map(value => value.trim()).filter(Boolean);
   for (const statement of statements) await connection.query(statement);
+  await upgradeSchema(connection);
 }
 
 async function setup() {
@@ -82,4 +138,4 @@ if (require.main === module) setup().catch(error => {
   process.exitCode = 1;
 }).finally(() => pool.end());
 
-module.exports = { setup, applySchema, verifySchema };
+module.exports = { setup, applySchema, upgradeSchema, verifySchema };

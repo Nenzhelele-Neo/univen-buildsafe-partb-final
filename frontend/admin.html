@@ -9,13 +9,14 @@
 <main class="container">
 <p class="tag">ADMINISTRATION</p><h1>Manage System</h1>
 <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:20px;">
-<button id="showProjectForm" class="btn" type="button">+ Add Construction Project</button>
+<button id="showProjectForm" class="btn" type="button">+ Add Campus Work</button>
 <button id="showNoticeForm" class="btn" type="button">+ Create Notice</button>
 </div>
 <div class="admin-grid">
 <form id="projectForm" class="form-card" style="display:none;">
-<h2>Add Construction Project</h2>
-<input id="name" placeholder="Project name" required>
+<h2>Add Campus Work</h2>
+<label for="workType">Work Type</label><select id="workType"><option>Construction</option><option>Maintenance</option></select>
+<input id="name" placeholder="Work title" required>
 <textarea id="description" placeholder="Description" required></textarea>
 <input id="location" placeholder="Location" required>
 <div class="location-choice-row"><div><label for="projectCampusLocation">Campus location</label><select id="projectCampusLocation"><option value="">Choose a known campus location</option></select></div><button id="pickProjectLocation" class="btn secondary" type="button">Pick Exact Point</button></div>
@@ -25,18 +26,27 @@
 <input id="affectedArea" placeholder="Affected area" required>
 <input id="latitude" type="hidden">
 <input id="longitude" type="hidden">
-<button class="btn" type="submit">Add Project</button>
+<button class="btn" type="submit">Add Campus Work</button>
 <button id="cancelProjectForm" class="btn secondary" type="button">Cancel</button><p id="projectMessage"></p>
 </form>
 <form id="announcementForm" class="form-card" style="display:none;">
 <h2>Create Notice</h2>
 <input id="title" placeholder="Notice title" required>
+<select id="noticeCategory"><option value="">Notice category (optional)</option><option>General Campus Update</option><option>Construction</option><option>Maintenance</option><option>Electrical</option><option>Water Supply / Damage</option><option>Road / Walkway</option><option>Safety Hazard</option><option>Other</option></select>
+<input id="noticeLocation" placeholder="Location (optional)">
+<label class="map-visibility-control"><input id="noticeShowOnMap" type="checkbox"> Show on campus map</label>
+<div id="noticeMapFields" hidden>
+<div class="location-choice-row"><div><label for="noticeCampusLocation">Campus location</label><select id="noticeCampusLocation"><option value="">Choose a known campus location</option></select></div><button id="pickNoticeLocation" class="btn secondary" type="button">Pick Exact Point</button></div>
+<p id="noticeLocationStatus" class="location-selection-status" aria-live="polite">No map point selected. This notice will not appear on the map.</p>
+<input id="noticeLatitude" type="hidden">
+<input id="noticeLongitude" type="hidden">
+</div>
 <textarea id="announcementMessage" placeholder="Notice message" required></textarea>
 <button class="btn" type="submit">Publish Notice</button>
 <button id="cancelNoticeForm" class="btn secondary" type="button">Cancel</button><p id="announcementMessageResult"></p>
 </form>
 </div>
-<h2>Existing Projects</h2><div id="adminProjects" class="cards"></div>
+<h2>Existing Campus Work</h2><div id="adminProjects" class="cards"></div>
 <h2>Student Reports</h2><div id="reports" class="notice-list"></div>
 </main>
 

@@ -6,20 +6,24 @@ const fields = {
   users: { id: "id", name: "name", email: "email", password: "password", role: "role" },
   projects: {
     id: "id", name: "name", description: "description", location: "location", status: "status",
-    startDate: "start_date", endDate: "end_date", affectedArea: "affected_area",
+    workType: "work_type", startDate: "start_date", endDate: "end_date", affectedArea: "affected_area",
     latitude: "latitude", longitude: "longitude", sourceReportId: "source_report_id", photoUrl: "photo_url"
   },
   reports: {
     id: "id", category: "category", name: "name", location: "location", description: "description",
     date: "date", status: "status", latitude: "latitude", longitude: "longitude", photoUrl: "photo_url",
     publishedTitle: "published_title", publishedCategory: "published_category", publishedLocation: "published_location",
+    publishedWorkType: "published_work_type", publishedStatus: "published_status",
     publishedDescription: "published_description", publishedAffectedArea: "published_affected_area",
     publishedStartDate: "published_start_date", publishedEndDate: "published_end_date", publishedType: "published_type",
+    publishedLatitude: "published_latitude", publishedLongitude: "published_longitude",
+    publishedShowOnMap: "published_show_on_map",
     publishedItemId: "published_item_id", publishedNoticeId: "published_notice_id"
   },
   announcements: {
     id: "id", title: "title", category: "category", location: "location", message: "message",
-    date: "date", photoUrl: "photo_url", sourceReportId: "source_report_id"
+    date: "date", latitude: "latitude", longitude: "longitude", showOnMap: "show_on_map",
+    photoUrl: "photo_url", sourceReportId: "source_report_id"
   },
   campus_locations: { id: "id", name: "name", type: "type", latitude: "latitude", longitude: "longitude" },
   routes: Object.fromEntries([
@@ -102,8 +106,12 @@ function createStore(database = pool) {
       return users[0];
     },
     projects: () => rows(database, "projects", "ORDER BY id DESC"),
-    announcements: () => rows(database, "announcements", "ORDER BY date DESC, id DESC"),
+    async announcements() {
+      return (await rows(database, "announcements", "ORDER BY date DESC, id DESC"))
+        .map(item => ({ ...item, showOnMap: Boolean(Number(item.showOnMap)) }));
+    },
     reports: () => rows(database, "reports", "ORDER BY date DESC, id DESC"),
+    report: id => one(database, "reports", id),
     locations: () => rows(database, "campus_locations", "WHERE type <> 'Junction' OR type IS NULL ORDER BY id"),
     async routes() { return decodeRoutes(await rows(database, "routes", "ORDER BY id")); },
     async routingData() {
@@ -123,10 +131,13 @@ function createStore(database = pool) {
         await update(connection, "projects", id, project);
         if (existing.sourceReportId) {
           await update(connection, "reports", report.id, {
-            publishedTitle: project.name, publishedCategory: "Construction",
+            publishedTitle: project.name, publishedCategory: null, publishedWorkType: project.workType,
+            publishedStatus: project.status,
             publishedLocation: project.location, publishedDescription: project.description,
             publishedAffectedArea: project.affectedArea, publishedStartDate: project.startDate,
-            publishedEndDate: project.endDate, publishedType: "project", publishedItemId: id, publishedNoticeId: null,
+            publishedEndDate: project.endDate, publishedLatitude: project.latitude,
+            publishedLongitude: project.longitude, publishedShowOnMap: null,
+            publishedType: "project", publishedItemId: id, publishedNoticeId: null,
             status: project.status === "Completed" ? "Completed" : report.status === "Completed" ? "Approved" : report.status
           });
         }
@@ -144,7 +155,8 @@ function createStore(database = pool) {
     async createAnnouncement(announcement) {
       return transact(async connection => {
         const id = await insert(connection, "announcements", announcement);
-        return (await rows(connection, "announcements", "WHERE id = ?", [id]))[0];
+        const item = (await rows(connection, "announcements", "WHERE id = ?", [id]))[0];
+        return { ...item, showOnMap: Boolean(Number(item.showOnMap)) };
       });
     },
     async createReport(report) {
@@ -154,7 +166,7 @@ function createStore(database = pool) {
       return transact(async connection => {
         const report = await one(connection, "reports", id, true);
         if (publication.completeOnly) {
-          if (report.status !== "Approved") fail(409, "Only an approved report can be marked complete.");
+          if (report.status !== "Approved" || report.publishedType !== "project") fail(409, "Only approved campus work can be marked complete.");
           await connection.execute("UPDATE projects SET status = 'Completed' WHERE source_report_id = ?", [id]);
           await update(connection, "reports", id, { status: "Completed" });
           return one(connection, "reports", id);
@@ -168,22 +180,25 @@ function createStore(database = pool) {
           return one(connection, "reports", id);
         }
 
-        const isConstruction = publication.publishedCategory === "Construction";
-        const table = isConstruction ? "projects" : "announcements";
-        const otherTable = isConstruction ? "announcements" : "projects";
+        const isWork = publication.publishedType === "project";
+        const table = isWork ? "projects" : "announcements";
+        const otherTable = isWork ? "announcements" : "projects";
         await connection.execute(`DELETE FROM ${otherTable} WHERE source_report_id = ?`, [id]);
         const [existing] = await rows(connection, table, "WHERE source_report_id = ? FOR UPDATE", [id]);
         const common = { sourceReportId: id, photoUrl: report.photoUrl || existing?.photoUrl || null };
-        const item = isConstruction ? {
+        const latitude = publication.publishedLatitude ?? existing?.latitude ?? report.latitude;
+        const longitude = publication.publishedLongitude ?? existing?.longitude ?? report.longitude;
+        const item = isWork ? {
           ...common, name: publication.publishedTitle, description: publication.publishedDescription,
           location: publication.publishedLocation, affectedArea: publication.publishedAffectedArea,
           startDate: publication.publishedStartDate, endDate: publication.publishedEndDate,
-          status: publication.status === "Completed" ? "Completed" : "In Progress",
-          latitude: existing?.latitude ?? report.latitude, longitude: existing?.longitude ?? report.longitude
+          status: publication.status === "Completed" ? "Completed" : publication.publishedStatus,
+          workType: publication.publishedWorkType, latitude, longitude
         } : {
           ...common, title: publication.publishedTitle, category: publication.publishedCategory,
           location: publication.publishedLocation, message: publication.publishedDescription,
-          date: existing?.date || new Date().toISOString().slice(0, 10)
+          date: existing?.date || new Date().toISOString().slice(0, 10),
+          latitude, longitude, showOnMap: publication.publishedShowOnMap
         };
         let itemId;
         if (existing) {
@@ -193,8 +208,7 @@ function createStore(database = pool) {
           itemId = await insert(connection, table, item);
         }
         await update(connection, "reports", id, {
-          ...publication, publishedType: isConstruction ? "project" : "announcement",
-          publishedItemId: itemId, publishedNoticeId: isConstruction ? null : itemId
+          ...publication, publishedItemId: itemId, publishedNoticeId: isWork ? null : itemId
         });
         return one(connection, "reports", id);
       });

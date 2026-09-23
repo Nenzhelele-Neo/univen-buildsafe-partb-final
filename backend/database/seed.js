@@ -30,7 +30,12 @@ function normalizeSeed(table, input) {
   }
   if ("latitude" in record) Object.assign(record, validate.coordinates(record));
   if (table === "campus_locations" && record.latitude == null) throw new Error(`Location ${record.id} needs coordinates.`);
-  if (table === "projects") record.affectedArea ??= "";
+  if (table === "projects") {
+    record.affectedArea ??= "";
+    record.workType ??= record.name === "Road Maintenance" ? "Maintenance" : "Construction";
+    if (!validate.WORK_TYPES.includes(record.workType)) throw new Error(`Project ${record.id}: invalid work type.`);
+  }
+  if (table === "announcements") record.showOnMap = Boolean(record.showOnMap);
   if (table === "routes") {
     for (const key of ["start_location_id", "end_location_id"]) record[key] = validate.id(record[key]);
     for (const key of ["distance_meters", "estimated_minutes"]) {

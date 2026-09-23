@@ -4,7 +4,8 @@ if (user.role !== "admin") {
   location.href = "dashboard.html";
 }
 
-const reportCategories = ["Construction", "Electrical", "Water Supply / Damage", "Road / Walkway", "Safety Hazard", "Other"];
+const reportCategories = ["Construction", "Maintenance", "Electrical", "Water Supply / Damage", "Road / Walkway", "Safety Hazard", "Other"];
+const noticeCategories = ["General Campus Update", ...reportCategories];
 const projectStatuses = ["Planned", "In Progress", "Completed", "Delayed"];
 let editingReportId = null;
 let editingProjectId = null;
@@ -15,6 +16,11 @@ const projectCampusLocation = document.getElementById("projectCampusLocation");
 const projectLatitude = document.getElementById("latitude");
 const projectLongitude = document.getElementById("longitude");
 const projectLocationStatus = document.getElementById("projectLocationStatus");
+const noticeCampusLocation = document.getElementById("noticeCampusLocation");
+const noticeLatitude = document.getElementById("noticeLatitude");
+const noticeLongitude = document.getElementById("noticeLongitude");
+const noticeLocationStatus = document.getElementById("noticeLocationStatus");
+const noticeShowOnMap = document.getElementById("noticeShowOnMap");
 let campusLocations = [];
 
 function knownLocationForCoordinates(latitude, longitude) {
@@ -37,6 +43,10 @@ function locationConfirmation(latitude, longitude) {
   }
   const knownLocation = knownLocationForCoordinates(latitude, longitude);
   return knownLocation ? `Location set to ${knownLocation.name}` : "Exact campus location selected.";
+}
+
+function hasValidCampusPoint(latitude, longitude) {
+  return BuildSafeLocationPicker.isWithinCampus(latitude, longitude, campusLocations);
 }
 
 function applyCampusLocation(select, latitudeInput, longitudeInput, locationInput, statusElement) {
@@ -92,6 +102,10 @@ document.getElementById("cancelProjectForm").addEventListener("click", () => {
 
 document.getElementById("cancelNoticeForm").addEventListener("click", () => {
   announcementForm.reset();
+  noticeLatitude.value = "";
+  noticeLongitude.value = "";
+  noticeLocationStatus.textContent = "No map point selected. This notice will not appear on the map.";
+  updateDirectNoticeMapFields();
   document.getElementById("announcementMessageResult").textContent = "";
   setActiveAdminForm(null);
 });
@@ -112,15 +126,43 @@ document.getElementById("pickProjectLocation").addEventListener("click", () => o
   projectLocationStatus
 ));
 
+noticeCampusLocation.addEventListener("change", () => applyCampusLocation(
+  noticeCampusLocation,
+  noticeLatitude,
+  noticeLongitude,
+  document.getElementById("noticeLocation"),
+  noticeLocationStatus
+));
+
+document.getElementById("pickNoticeLocation").addEventListener("click", () => openLocationPicker(
+  noticeLatitude,
+  noticeLongitude,
+  document.getElementById("noticeLocation"),
+  noticeCampusLocation,
+  noticeLocationStatus
+));
+
+function updateDirectNoticeMapFields() {
+  document.getElementById("noticeMapFields").hidden = !noticeShowOnMap.checked;
+  noticeLocationStatus.textContent = noticeShowOnMap.checked
+    ? hasValidCampusPoint(noticeLatitude.value, noticeLongitude.value)
+      ? locationConfirmation(noticeLatitude.value, noticeLongitude.value)
+      : "Choose a campus location or pick an exact point."
+    : "Map visibility disabled for this notice.";
+}
+
+noticeShowOnMap.addEventListener("change", updateDirectNoticeMapFields);
+
 projectForm.addEventListener("submit", async e => {
   e.preventDefault();
-  if (!projectLatitude.value || !projectLongitude.value) {
+  if (!hasValidCampusPoint(projectLatitude.value, projectLongitude.value)) {
     const message = document.getElementById("projectMessage");
     message.textContent = "Choose a campus location or pick an exact point on the map.";
     message.className = "error";
     return;
   }
   const data = {
+    workType: document.getElementById("workType").value,
     name: document.getElementById("name").value.trim(),
     description: document.getElementById("description").value.trim(),
     location: document.getElementById("location").value.trim(),
@@ -134,7 +176,8 @@ projectForm.addEventListener("submit", async e => {
   const response = await fetch("/api/projects", {
     method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(data)
   });
-  document.getElementById("projectMessage").textContent = response.ok ? "Project added." : "Could not add project.";
+  const result = await response.json().catch(() => ({}));
+  document.getElementById("projectMessage").textContent = response.ok ? "Campus work added." : result.message || "Could not add campus work.";
   if (response.ok) {
     e.target.reset();
     projectLatitude.value = "";
@@ -147,13 +190,30 @@ projectForm.addEventListener("submit", async e => {
 
 announcementForm.addEventListener("submit", async e => {
   e.preventDefault();
+  if (noticeShowOnMap.checked && !hasValidCampusPoint(noticeLatitude.value, noticeLongitude.value)) {
+    document.getElementById("announcementMessageResult").textContent = "Choose a campus location or pick an exact point for this map-visible notice.";
+    return;
+  }
   const response = await fetch("/api/announcements", {
     method:"POST", headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({title:title.value, message:announcementMessage.value})
+    body:JSON.stringify({
+      title: document.getElementById("title").value.trim(),
+      category: document.getElementById("noticeCategory").value,
+      location: document.getElementById("noticeLocation").value.trim(),
+      message: document.getElementById("announcementMessage").value.trim(),
+      showOnMap: noticeShowOnMap.checked,
+      latitude: noticeLatitude.value,
+      longitude: noticeLongitude.value
+    })
   });
-  document.getElementById("announcementMessageResult").textContent = response.ok ? "Notice published." : "Could not publish notice.";
+  const result = await response.json().catch(() => ({}));
+  document.getElementById("announcementMessageResult").textContent = response.ok ? "Notice published." : result.message || "Could not publish notice.";
   if (response.ok) {
     e.target.reset();
+    noticeLatitude.value = "";
+    noticeLongitude.value = "";
+    noticeLocationStatus.textContent = "No map point selected. This notice will not appear on the map.";
+    updateDirectNoticeMapFields();
     setActiveAdminForm(null);
   }
 });
@@ -168,10 +228,12 @@ async function loadAdmin() {
   const projects = await pRes.json(), reports = await rRes.json(), announcements = await aRes.json();
   campusLocations = await lRes.json();
   projectCampusLocation.innerHTML = campusLocationOptions();
+  noticeCampusLocation.innerHTML = campusLocationOptions();
 
   document.getElementById("adminProjects").innerHTML = projects.map(p => `
     <article class="card">
-      <span class="badge">${p.status}</span><h3>${p.name}</h3>
+      <span class="badge">${p.status}</span> <span class="badge">${p.workType}</span>
+      ${!hasValidCampusPoint(p.latitude, p.longitude) ? '<span class="badge map-warning">Map location required</span>' : ""}<h3>${p.name}</h3>
       <p>${p.location}</p>
       ${p.sourceReportId ? '<small>Managed from Student Reports.</small>' : ""}
 
@@ -182,6 +244,8 @@ async function loadAdmin() {
         </div>
       ` : `
         <div class="form-card" style="margin-top: 12px;">
+          <label for="project-edit-work-type-${p.id}">Work Type</label>
+          <select id="project-edit-work-type-${p.id}"><option>Construction</option><option>Maintenance</option></select>
           <label for="project-edit-name-${p.id}">Project name</label>
           <input id="project-edit-name-${p.id}" maxlength="150">
           <label for="project-edit-description-${p.id}">Description</label>
@@ -214,6 +278,7 @@ async function loadAdmin() {
   const editingProject = projects.find(project => project.id == editingProjectId);
   if (editingProject) {
     document.getElementById(`project-edit-name-${editingProject.id}`).value = editingProject.name || "";
+    document.getElementById(`project-edit-work-type-${editingProject.id}`).value = editingProject.workType || "Construction";
     document.getElementById(`project-edit-description-${editingProject.id}`).value = editingProject.description || "";
     document.getElementById(`project-edit-location-${editingProject.id}`).value = editingProject.location || "";
     document.getElementById(`project-edit-status-${editingProject.id}`).value = editingProject.status || "Planned";
@@ -237,26 +302,30 @@ async function loadAdmin() {
         <div style="margin-top: 12px;">
           <button class="btn" onclick="editReport(${r.id})">Edit</button>
           <button class="btn danger" onclick="deleteReport(${r.id})">Delete</button>
-          ${r.status === "Approved" ? `<button class="btn" onclick="markReportComplete(${r.id})">Mark Complete</button>` : ""}
+          ${r.status === "Approved" && r.publishedType === "project" ? `<button class="btn" onclick="markReportComplete(${r.id})">Mark Complete</button>` : ""}
         </div>
       ` : ""}
 
       ${r.status === "Pending" || r.id == editingReportId ? `
       <div id="report-editor-${r.id}" class="form-card" style="margin-top: 12px;">
-        <h3>System-facing report</h3>
-        <label for="report-title-${r.id}">Title / project name</label>
-        <input id="report-title-${r.id}" maxlength="150">
-        <label for="report-category-${r.id}">Category</label>
-        <select id="report-category-${r.id}" onchange="updateConstructionFields(${r.id})">
-          <option value="">Select category</option>
-          ${reportCategories.map(category => `<option>${category}</option>`).join("")}
+        <h3>Publication</h3>
+        <label for="report-publication-type-${r.id}">Publish as</label>
+        <select id="report-publication-type-${r.id}" onchange="updatePublicationFields(${r.id})">
+          <option value="project">Campus Work</option>
+          <option value="announcement">Campus Notice</option>
         </select>
-        <label for="report-location-${r.id}">Location</label>
+        <label for="report-title-${r.id}">Published title</label>
+        <input id="report-title-${r.id}" maxlength="150">
+        <label for="report-location-${r.id}">Published location</label>
         <input id="report-location-${r.id}" maxlength="150">
-        <label for="report-description-${r.id}">Message / description</label>
+        <label id="report-description-label-${r.id}" for="report-description-${r.id}">Published description</label>
         <textarea id="report-description-${r.id}" rows="4" maxlength="500"></textarea>
 
-        <div id="construction-fields-${r.id}">
+        <div id="work-fields-${r.id}">
+          <label for="report-work-type-${r.id}">Work Type</label>
+          <select id="report-work-type-${r.id}"><option>Construction</option><option>Maintenance</option></select>
+          <label for="report-work-status-${r.id}">Status</label>
+          <select id="report-work-status-${r.id}">${projectStatuses.map(status => `<option>${status}</option>`).join("")}</select>
           <label for="report-affected-area-${r.id}">Affected area</label>
           <input id="report-affected-area-${r.id}" maxlength="200">
           <label for="report-start-date-${r.id}">Start date (optional)</label>
@@ -264,6 +333,21 @@ async function loadAdmin() {
           <label for="report-end-date-${r.id}">Expected end date (optional)</label>
           <input id="report-end-date-${r.id}" type="date">
         </div>
+
+        <div id="notice-fields-${r.id}">
+          <label for="report-notice-category-${r.id}">Notice category</label>
+          <select id="report-notice-category-${r.id}">${noticeCategories.map(category => `<option>${category}</option>`).join("")}</select>
+          <label class="map-visibility-control"><input id="report-show-on-map-${r.id}" type="checkbox" onchange="updatePublicationFields(${r.id})"> Show on campus map</label>
+        </div>
+
+        <div id="report-map-fields-${r.id}">
+          <label for="report-campus-location-${r.id}">Campus location</label>
+          <select id="report-campus-location-${r.id}" onchange="applyKnownReportLocation(${r.id})">${campusLocationOptions()}</select>
+          <button class="btn secondary" type="button" onclick="pickExactReportLocation(${r.id})">Pick Exact Point</button>
+          <p id="report-location-status-${r.id}" class="location-selection-status">No map point selected.</p>
+        </div>
+        <input id="report-latitude-${r.id}" type="hidden">
+        <input id="report-longitude-${r.id}" type="hidden">
 
         <p id="report-edit-message-${r.id}" class="error"></p>
 
@@ -295,14 +379,29 @@ async function loadAdmin() {
       announcements.find(item => item.sourceReportId == r.id) ||
       announcements.find(item => item.id == r.publishedNoticeId);
 
+    const defaultType = r.publishedType || (["Construction", "Maintenance"].includes(r.category) ? "project" : "announcement");
+    const latitude = r.publishedLatitude ?? publishedItem?.latitude ?? r.latitude ?? "";
+    const longitude = r.publishedLongitude ?? publishedItem?.longitude ?? r.longitude ?? "";
+    const hasValidOriginalPoint = hasValidCampusPoint(latitude, longitude);
+    const showOnMap = r.publishedShowOnMap != null ? Boolean(Number(r.publishedShowOnMap)) :
+      publishedItem?.showOnMap != null ? Boolean(Number(publishedItem.showOnMap)) : hasValidOriginalPoint;
+    document.getElementById(`report-publication-type-${r.id}`).value = defaultType;
     document.getElementById(`report-title-${r.id}`).value = r.publishedTitle || publishedItem?.name || publishedItem?.title || `Safety Report: ${r.location}`;
-    document.getElementById(`report-category-${r.id}`).value = r.publishedCategory || publishedItem?.category || (publishedItem?.status ? "Construction" : r.category || "");
     document.getElementById(`report-location-${r.id}`).value = r.publishedLocation || publishedItem?.location || r.location;
     document.getElementById(`report-description-${r.id}`).value = r.publishedDescription || publishedItem?.description || publishedItem?.message || r.description;
+    document.getElementById(`report-work-type-${r.id}`).value = r.publishedWorkType || publishedItem?.workType || (r.category === "Maintenance" ? "Maintenance" : "Construction");
+    document.getElementById(`report-work-status-${r.id}`).value = r.publishedStatus || publishedItem?.status || "In Progress";
+    document.getElementById(`report-notice-category-${r.id}`).value = r.publishedCategory || publishedItem?.category || (noticeCategories.includes(r.category) ? r.category : "Other");
     document.getElementById(`report-affected-area-${r.id}`).value = r.publishedAffectedArea || publishedItem?.affectedArea || "";
     document.getElementById(`report-start-date-${r.id}`).value = r.publishedStartDate || publishedItem?.startDate || "";
     document.getElementById(`report-end-date-${r.id}`).value = r.publishedEndDate || publishedItem?.endDate || "";
-    updateConstructionFields(r.id);
+    document.getElementById(`report-latitude-${r.id}`).value = latitude;
+    document.getElementById(`report-longitude-${r.id}`).value = longitude;
+    document.getElementById(`report-show-on-map-${r.id}`).checked = showOnMap;
+    document.getElementById(`report-campus-location-${r.id}`).value = knownLocationForCoordinates(latitude, longitude)?.id || "";
+    document.getElementById(`report-location-status-${r.id}`).textContent = latitude !== "" && longitude !== ""
+      ? locationConfirmation(latitude, longitude) : "No map point selected.";
+    updatePublicationFields(r.id);
   });
 }
 
@@ -338,6 +437,7 @@ function pickExactProjectLocation(id) {
 
 async function saveProject(id) {
   const data = {
+    workType: document.getElementById(`project-edit-work-type-${id}`).value,
     name: document.getElementById(`project-edit-name-${id}`).value.trim(),
     description: document.getElementById(`project-edit-description-${id}`).value.trim(),
     location: document.getElementById(`project-edit-location-${id}`).value.trim(),
@@ -354,6 +454,7 @@ async function saveProject(id) {
   if (!data.description) missingFields.push("description");
   if (!data.location) missingFields.push("location");
   if (!data.status) missingFields.push("status");
+  if (!hasValidCampusPoint(data.latitude, data.longitude)) missingFields.push("valid campus map point");
 
   if (missingFields.length) {
     message.textContent = `Please complete: ${missingFields.join(", ")}.`;
@@ -376,9 +477,33 @@ async function saveProject(id) {
   await loadAdmin();
 }
 
-function updateConstructionFields(id) {
-  const isConstruction = document.getElementById(`report-category-${id}`).value === "Construction";
-  document.getElementById(`construction-fields-${id}`).hidden = !isConstruction;
+function updatePublicationFields(id) {
+  const isWork = document.getElementById(`report-publication-type-${id}`).value === "project";
+  const showOnMap = document.getElementById(`report-show-on-map-${id}`).checked;
+  document.getElementById(`work-fields-${id}`).hidden = !isWork;
+  document.getElementById(`notice-fields-${id}`).hidden = isWork;
+  document.getElementById(`report-map-fields-${id}`).hidden = !isWork && !showOnMap;
+  document.getElementById(`report-description-label-${id}`).textContent = isWork ? "Published description" : "Message";
+}
+
+function applyKnownReportLocation(id) {
+  applyCampusLocation(
+    document.getElementById(`report-campus-location-${id}`),
+    document.getElementById(`report-latitude-${id}`),
+    document.getElementById(`report-longitude-${id}`),
+    document.getElementById(`report-location-${id}`),
+    document.getElementById(`report-location-status-${id}`)
+  );
+}
+
+function pickExactReportLocation(id) {
+  openLocationPicker(
+    document.getElementById(`report-latitude-${id}`),
+    document.getElementById(`report-longitude-${id}`),
+    document.getElementById(`report-location-${id}`),
+    document.getElementById(`report-campus-location-${id}`),
+    document.getElementById(`report-location-status-${id}`)
+  );
 }
 
 async function editReport(id) {
@@ -392,18 +517,25 @@ async function cancelReportEdit() {
 }
 
 function reportReviewData(id, status) {
+  const publishedType = document.getElementById(`report-publication-type-${id}`).value;
   const data = {
     status,
+    publishedType,
     publishedTitle: document.getElementById(`report-title-${id}`).value.trim(),
-    publishedCategory: document.getElementById(`report-category-${id}`).value,
+    publishedCategory: document.getElementById(`report-notice-category-${id}`).value,
+    publishedWorkType: document.getElementById(`report-work-type-${id}`).value,
+    publishedStatus: document.getElementById(`report-work-status-${id}`).value,
     publishedLocation: document.getElementById(`report-location-${id}`).value.trim(),
     publishedDescription: document.getElementById(`report-description-${id}`).value.trim(),
     publishedAffectedArea: document.getElementById(`report-affected-area-${id}`).value.trim(),
     publishedStartDate: document.getElementById(`report-start-date-${id}`).value,
-    publishedEndDate: document.getElementById(`report-end-date-${id}`).value
+    publishedEndDate: document.getElementById(`report-end-date-${id}`).value,
+    publishedLatitude: document.getElementById(`report-latitude-${id}`).value,
+    publishedLongitude: document.getElementById(`report-longitude-${id}`).value,
+    publishedShowOnMap: document.getElementById(`report-show-on-map-${id}`).checked
   };
 
-  if (data.publishedCategory !== "Construction") {
+  if (publishedType !== "project") {
     data.publishedAffectedArea = "";
     data.publishedStartDate = "";
     data.publishedEndDate = "";
@@ -420,9 +552,11 @@ async function updateReportStatus(id, status) {
   if (status === "Approved" || status === "Completed") {
     const missingFields = [];
     if (data.publishedTitle.length < 3) missingFields.push("title");
-    if (!data.publishedCategory) missingFields.push("category");
     if (data.publishedLocation.length < 3) missingFields.push("location");
     if (data.publishedDescription.length < 10) missingFields.push("message / description");
+    if (data.publishedType === "announcement" && !data.publishedCategory) missingFields.push("notice category");
+    if ((data.publishedType === "project" || data.publishedShowOnMap) &&
+        !hasValidCampusPoint(data.publishedLatitude, data.publishedLongitude)) missingFields.push("valid campus map point");
 
     if (missingFields.length) {
       editMessage.textContent = `Please complete: ${missingFields.join(", ")}.`;
@@ -490,8 +624,8 @@ async function deleteReport(id) {
 
 async function deleteProject(id, sourceReportId) {
   const message = sourceReportId
-    ? "This construction project was created from a student report.\nDeleting it will also remove the linked report. Continue?"
-    : "Delete this project?";
+    ? "This campus work item was created from a student report.\nDeleting it will also remove the linked report. Continue?"
+    : "Delete this campus work item?";
   if (!confirm(message)) return;
 
   const response = await fetch("/api/projects/" + id, {method:"DELETE"});
@@ -505,4 +639,5 @@ async function deleteProject(id, sourceReportId) {
   loadAdmin();
 }
 setActiveAdminForm(null);
+updateDirectNoticeMapFields();
 loadAdmin();

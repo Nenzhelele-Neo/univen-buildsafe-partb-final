@@ -17,7 +17,7 @@ async function loadDashboard() {
 
   document.getElementById("projectCards").innerHTML = projects.slice(0,3).map(p => `
     <article class="card">
-      <span class="badge">${p.status}</span>
+      <span class="badge">${p.status}</span> <span class="badge">${p.workType}</span>
       <h3>${p.name}</h3><p>${p.description}</p>
       <small>📍 ${p.location}</small>
     </article>`).join("");

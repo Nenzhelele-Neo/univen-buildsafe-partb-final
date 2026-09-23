@@ -5,7 +5,7 @@ async function loadProjects() {
   const container = document.getElementById("projects");
   container.innerHTML = projects.map(p => `
     <article class="card">
-      <span class="badge">${p.status}</span>
+      <span class="badge">${p.status}</span> <span class="badge">${p.workType}</span>
       <h3>${p.name}</h3>
       <p>${p.description}</p>
       <p><b>Location:</b> ${p.location}</p>

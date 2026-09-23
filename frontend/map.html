@@ -14,16 +14,16 @@
   <nav><a href="dashboard.html">Dashboard</a><a class="active" href="map.html">Map</a><a href="projects.html">Projects</a><a href="report.html">Report</a><button id="logout" class="link-button">Logout</button></nav>
 </header>
 <main class="container">
-  <div class="section-title"><div><p class="tag">INTERACTIVE MAP</p><h1>Construction Areas</h1></div></div>
+  <div class="section-title"><div><p class="tag">INTERACTIVE MAP</p><h1>Campus Updates</h1></div></div>
   <div class="map-layout">
     <div id="map"></div>
     <aside class="map-info">
-      <h2>Project status</h2>
-      <p><span class="dot red"></span> In Progress</p>
-      <p><span class="dot yellow"></span> Planned</p>
-      <p><span class="dot green"></span> Completed</p>
+      <h2>Map legend</h2>
+      <p><span class="dot red"></span> Construction</p>
+      <p><span class="dot orange"></span> Maintenance</p>
+      <p><span class="dot blue"></span> Notice / campus update</p>
       <hr>
-      <p>Click a marker to view project information.</p>
+      <p>Click a marker to view current project or notice information.</p>
       <button id="openRoutePanel" class="btn map-plan-button" type="button" aria-controls="routeForm" aria-expanded="false">Plan Safe Route</button>
       <div class="route-info-note"><span class="info-icon" aria-hidden="true">i</span>Campus route guidance may use approximate mapped locations and may not reflect temporary access changes.</div>
     </aside>

@@ -1,5 +1,7 @@
-const REPORT_CATEGORIES = ["Construction", "Electrical", "Water Supply / Damage", "Road / Walkway", "Safety Hazard", "Other"];
+const REPORT_CATEGORIES = ["Construction", "Maintenance", "Electrical", "Water Supply / Damage", "Road / Walkway", "Safety Hazard", "Other"];
+const NOTICE_CATEGORIES = ["General Campus Update", ...REPORT_CATEGORIES];
 const PROJECT_STATUSES = ["Planned", "In Progress", "Completed", "Delayed"];
+const WORK_TYPES = ["Construction", "Maintenance"];
 
 function fail(status, message) {
   const error = new Error(message);
@@ -45,40 +47,99 @@ function coordinates(body) {
   return { latitude, longitude };
 }
 
+function boolean(value, fallback = false) {
+  if (value == null || value === "") return fallback;
+  if ([true, 1, "1", "true", "on"].includes(value)) return true;
+  if ([false, 0, "0", "false", "off"].includes(value)) return false;
+  fail(400, "Invalid map visibility setting.");
+}
+
+function isCampusPoint(latitude, longitude, locations) {
+  const lat = Number(latitude), lng = Number(longitude);
+  const points = Array.isArray(locations) ? locations.map(location => [Number(location.latitude), Number(location.longitude)])
+    .filter(point => point.every(Number.isFinite)) : [];
+  if (!Number.isFinite(lat) || !Number.isFinite(lng) || !points.length) return false;
+  const latitudes = points.map(point => point[0]), longitudes = points.map(point => point[1]);
+  const minLat = Math.min(...latitudes), maxLat = Math.max(...latitudes);
+  const minLng = Math.min(...longitudes), maxLng = Math.max(...longitudes);
+  const latPadding = (maxLat - minLat || 0.012) * 0.35;
+  const lngPadding = (maxLng - minLng || 0.012) * 0.35;
+  return lat >= minLat - latPadding && lat <= maxLat + latPadding &&
+    lng >= minLng - lngPadding && lng <= maxLng + lngPadding;
+}
+
 function project(body) {
   const result = {
     name: text(body.name, 255), description: text(body.description),
     location: text(body.location, 255), status: text(body.status, 20),
+    workType: text(body.workType, 20) || "Construction",
     affectedArea: text(body.affectedArea, 255),
     ...dates(body.startDate, body.endDate), ...coordinates(body)
   };
-  if (!result.name || !result.description || !result.location || !PROJECT_STATUSES.includes(result.status)) {
-    fail(400, "Project name, description, location, and status are required.");
+  if (!result.name || !result.description || !result.location || !PROJECT_STATUSES.includes(result.status) ||
+      !WORK_TYPES.includes(result.workType)) {
+    fail(400, "Campus work name, description, location, work type, and status are required.");
   }
   return result;
 }
 
-function publication(body) {
+function announcement(body) {
+  const result = {
+    title: text(body.title, 255),
+    category: text(body.category, 64) || null,
+    location: text(body.location, 255) || null,
+    message: text(body.message),
+    photoUrl: text(body.photoUrl, 512) || null,
+    ...coordinates(body)
+  };
+  result.showOnMap = boolean(body.showOnMap, result.latitude !== null);
+  if (!result.title || !result.message) fail(400, "Announcement title and message are required.");
+  if (result.showOnMap && result.latitude === null) fail(400, "Choose a campus map point for this notice.");
+  return result;
+}
+
+function publication(body, original = {}) {
   if (!["Approved", "Rejected", "Completed"].includes(body.status)) fail(400, "Invalid report status.");
   const { startDate, endDate } = dates(body.publishedStartDate, body.publishedEndDate);
+  const publishedType = text(body.publishedType, 20) || (body.publishedCategory === "Construction" ? "project" : "announcement");
+  const coordinateInput = {
+    latitude: Object.hasOwn(body, "publishedLatitude") ? body.publishedLatitude : original.latitude,
+    longitude: Object.hasOwn(body, "publishedLongitude") ? body.publishedLongitude : original.longitude
+  };
+  const publishedCoordinates = coordinates(coordinateInput);
   const result = {
     status: body.status,
+    publishedType,
     publishedTitle: text(body.publishedTitle, 255),
-    publishedCategory: text(body.publishedCategory, 64),
+    publishedCategory: text(body.publishedCategory, 64) || null,
+    publishedWorkType: text(body.publishedWorkType, 20) || "Construction",
+    publishedStatus: text(body.publishedStatus, 20) || (body.status === "Completed" ? "Completed" : "In Progress"),
     publishedLocation: text(body.publishedLocation, 255),
     publishedDescription: text(body.publishedDescription),
     publishedAffectedArea: text(body.publishedAffectedArea, 255),
-    publishedStartDate: startDate, publishedEndDate: endDate
+    publishedStartDate: startDate, publishedEndDate: endDate,
+    publishedLatitude: publishedCoordinates.latitude,
+    publishedLongitude: publishedCoordinates.longitude,
+    publishedShowOnMap: boolean(body.publishedShowOnMap, publishedCoordinates.latitude !== null)
   };
-  if (body.status !== "Rejected" && (result.publishedTitle.length < 3 ||
-      !REPORT_CATEGORIES.includes(result.publishedCategory) || result.publishedLocation.length < 3 || result.publishedDescription.length < 10)) {
-    fail(400, "Complete the publishable title, category, location, and message.");
+  if (body.status === "Rejected") return result;
+  if (!["project", "announcement"].includes(result.publishedType) || result.publishedTitle.length < 3 ||
+      result.publishedLocation.length < 3 || result.publishedDescription.length < 10) {
+    fail(400, "Complete the publication type, title, location, and description.");
   }
-  if (result.publishedCategory !== "Construction") {
+  if (result.publishedType === "project") {
+    if (!WORK_TYPES.includes(result.publishedWorkType) || !PROJECT_STATUSES.includes(result.publishedStatus) ||
+        result.publishedLatitude === null) fail(400, "Campus work requires a work type, status, and campus map point.");
+    result.publishedCategory = null;
+    result.publishedShowOnMap = null;
+  } else {
+    if (!NOTICE_CATEGORIES.includes(result.publishedCategory)) fail(400, "Choose a valid notice category.");
+    if (result.publishedShowOnMap && result.publishedLatitude === null) fail(400, "Choose a campus map point for this notice.");
+    result.publishedWorkType = result.publishedStatus = null;
     result.publishedAffectedArea = "";
     result.publishedStartDate = result.publishedEndDate = null;
   }
   return result;
 }
 
-module.exports = { REPORT_CATEGORIES, PROJECT_STATUSES, fail, id, text, date, dates, coordinates, project, publication };
+module.exports = { REPORT_CATEGORIES, NOTICE_CATEGORIES, PROJECT_STATUSES, WORK_TYPES, fail, id, text, date, dates, coordinates, boolean, isCampusPoint, project, announcement, publication };

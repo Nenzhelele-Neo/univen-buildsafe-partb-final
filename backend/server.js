@@ -76,9 +76,19 @@ function createApp({ store = createStore(), uploadDir = path.join(__dirname, "up
   }));
 
   app.get("/api/projects", asyncRoute(async (req, res) => res.json(await store.projects())));
-  app.post("/api/projects", asyncRoute(async (req, res) => res.status(201).json(await store.createProject(validate.project(req.body || {})))));
+  app.post("/api/projects", asyncRoute(async (req, res) => {
+    const project = validate.project(req.body || {});
+    if (!validate.isCampusPoint(project.latitude, project.longitude, await store.locations())) {
+      validate.fail(400, "Choose a valid campus location or exact campus map point.");
+    }
+    res.status(201).json(await store.createProject(project));
+  }));
   app.put("/api/projects/:id", asyncRoute(async (req, res) => {
-    res.json(await store.updateProject(validate.id(req.params.id), validate.project(req.body || {})));
+    const project = validate.project(req.body || {});
+    if (!validate.isCampusPoint(project.latitude, project.longitude, await store.locations())) {
+      validate.fail(400, "Choose a valid campus location or exact campus map point.");
+    }
+    res.json(await store.updateProject(validate.id(req.params.id), project));
   }));
   app.delete("/api/projects/:id", asyncRoute(async (req, res) => {
     await cleanupPhotos(await store.deleteProject(validate.id(req.params.id)));
@@ -87,9 +97,13 @@ function createApp({ store = createStore(), uploadDir = path.join(__dirname, "up
 
   app.get("/api/announcements", asyncRoute(async (req, res) => res.json(await store.announcements())));
   app.post("/api/announcements", asyncRoute(async (req, res) => {
-    const title = validate.text(req.body?.title, 255), message = validate.text(req.body?.message);
-    if (!title || !message) validate.fail(400, "Announcement title and message are required.");
-    res.status(201).json(await store.createAnnouncement({ title, message, date: new Date().toISOString().slice(0, 10) }));
+    const announcement = validate.announcement(req.body || {});
+    if (announcement.showOnMap && !validate.isCampusPoint(announcement.latitude, announcement.longitude, await store.locations())) {
+      validate.fail(400, "Choose a valid campus location or exact campus map point.");
+    }
+    res.status(201).json(await store.createAnnouncement({
+      ...announcement, date: new Date().toISOString().slice(0, 10)
+    }));
   }));
 
   app.get("/api/campus-locations", asyncRoute(async (req, res) => res.json(await store.locations())));
@@ -155,9 +169,15 @@ function createApp({ store = createStore(), uploadDir = path.join(__dirname, "up
   app.get("/api/reports", asyncRoute(async (req, res) => res.json(await store.reports())));
   app.put("/api/reports/:id/status", asyncRoute(async (req, res) => {
     const body = req.body || {};
+    const reportId = validate.id(req.params.id);
     const publication = body.status === "Completed" && !Object.hasOwn(body, "publishedTitle")
-      ? { completeOnly: true } : validate.publication(body);
-    res.json(await store.reviewReport(validate.id(req.params.id), publication));
+      ? { completeOnly: true } : validate.publication(body, await store.report(reportId));
+    if (!publication.completeOnly && publication.status !== "Rejected" &&
+        (publication.publishedType === "project" || publication.publishedShowOnMap) &&
+        !validate.isCampusPoint(publication.publishedLatitude, publication.publishedLongitude, await store.locations())) {
+      validate.fail(400, "Choose a valid campus location or exact campus map point.");
+    }
+    res.json(await store.reviewReport(reportId, publication));
   }));
   app.delete("/api/reports/:id", asyncRoute(async (req, res) => {
     await cleanupPhotos(await store.deleteReport(validate.id(req.params.id)));

@@ -1,7 +1,7 @@
 requireLogin();
 
 const map = L.map("map").setView([-22.9764, 30.4430], 16);
-const projectLayer = L.layerGroup().addTo(map);
+const mapItemLayer = L.layerGroup().addTo(map);
 const routeLayer = L.layerGroup().addTo(map);
 
 map.setMinZoom(15);
@@ -10,10 +10,87 @@ L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
   attribution: "&copy; OpenStreetMap contributors"
 }).addTo(map);
 
-function markerColor(status) {
-  if (status === "Completed") return "green";
-  if (status === "Planned") return "gold";
-  return "red";
+function markerIcon(color) {
+  return L.divIcon({
+    className: "custom-marker",
+    html: `<div class="map-marker-dot" style="background-color:${color}"></div>`,
+    iconSize: [18, 18]
+  });
+}
+
+function validCoordinates(item) {
+  if (item.latitude == null || item.longitude == null || item.latitude === "" || item.longitude === "") return null;
+  const latitude = Number(item.latitude), longitude = Number(item.longitude);
+  return Number.isFinite(latitude) && Number.isFinite(longitude) ? [latitude, longitude] : null;
+}
+
+function isCampusCoordinate(coordinates, locations) {
+  if (!coordinates || !locations.length) return false;
+  const latitudes = locations.map(location => Number(location.latitude)).filter(Number.isFinite);
+  const longitudes = locations.map(location => Number(location.longitude)).filter(Number.isFinite);
+  if (!latitudes.length || !longitudes.length) return false;
+  const minLat = Math.min(...latitudes), maxLat = Math.max(...latitudes);
+  const minLng = Math.min(...longitudes), maxLng = Math.max(...longitudes);
+  const latPadding = (maxLat - minLat || 0.012) * 0.35;
+  const lngPadding = (maxLng - minLng || 0.012) * 0.35;
+  return coordinates[0] >= minLat - latPadding && coordinates[0] <= maxLat + latPadding &&
+    coordinates[1] >= minLng - lngPadding && coordinates[1] <= maxLng + lngPadding;
+}
+
+function safePhotoUrl(photoUrl) {
+  if (!photoUrl) return null;
+  try {
+    const url = new URL(photoUrl, window.location.href);
+    return ["http:", "https:"].includes(url.protocol) ? url.href : null;
+  } catch {
+    return null;
+  }
+}
+
+function addPopupField(popup, label, value) {
+  if (value == null || String(value).trim() === "") return;
+  const line = document.createElement("p");
+  const heading = document.createElement("strong");
+  heading.textContent = `${label}: `;
+  line.append(heading, document.createTextNode(String(value)));
+  popup.appendChild(line);
+}
+
+function markerPopup(item, kind) {
+  const popup = document.createElement("div");
+  popup.className = "map-item-popup";
+  const photoUrl = safePhotoUrl(item.photoUrl);
+  if (photoUrl) {
+    const link = document.createElement("a");
+    link.href = photoUrl;
+    link.target = "_blank";
+    link.rel = "noopener";
+    const image = document.createElement("img");
+    image.className = "map-popup-photo";
+    image.src = photoUrl;
+    image.alt = `Photo for ${item.name || item.title || "map item"}`;
+    image.addEventListener("error", () => link.remove());
+    link.appendChild(image);
+    popup.appendChild(link);
+  }
+  const title = document.createElement("h3");
+  title.textContent = item.name || item.title || "Campus update";
+  popup.appendChild(title);
+  if (kind === "notice") {
+    addPopupField(popup, "Category", item.category || item.type || "Campus update");
+    addPopupField(popup, "Location", item.location);
+    addPopupField(popup, "Message", item.message);
+    addPopupField(popup, "Date", item.date);
+  } else {
+    addPopupField(popup, "Work type", item.workType);
+    addPopupField(popup, "Status", item.status);
+    addPopupField(popup, "Location", item.location);
+    addPopupField(popup, "Description", item.description);
+    addPopupField(popup, "Affected area", item.affectedArea);
+    addPopupField(popup, "Start date", item.startDate);
+    addPopupField(popup, "Expected end date", item.endDate);
+  }
+  return popup;
 }
 
 function setRouteStatus(message, type = "") {
@@ -23,13 +100,13 @@ function setRouteStatus(message, type = "") {
 }
 
 async function fetchJson(url) {
-  const response = await fetch(url);
+  const response = await fetch(url, { cache: "no-store" });
   if (!response.ok) {
     const data = await response.json().catch(() => ({}));
-    throw new Error(data.message || "Unable to load routing data.");
+    throw new Error(data.message || "Unable to load map data.");
   }
   const contentType = response.headers.get("content-type") || "";
-  if (!contentType.includes("application/json")) throw new Error("Routing API returned an invalid response.");
+  if (!contentType.includes("application/json")) throw new Error("Map API returned an invalid response.");
   return response.json();
 }
 
@@ -46,28 +123,31 @@ async function loadCampusLocations() {
   return locations;
 }
 
-async function loadProjectMarkers() {
-  const projects = await fetchJson("/api/projects");
-  projectLayer.clearLayers();
-  projects.forEach(project => {
-    if (project.latitude == null || project.longitude == null) return;
-    const latitude = Number(project.latitude);
-    const longitude = Number(project.longitude);
-    if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return;
+let campusLocations = [];
+let mapRefreshPromise = null;
 
-    const icon = L.divIcon({
-      className: "custom-marker",
-      html: `<div style="background:${markerColor(project.status)};width:18px;height:18px;border-radius:50%;border:3px solid white;box-shadow:0 1px 5px #000"></div>`,
-      iconSize: [18, 18]
-    });
-    L.marker([latitude, longitude], { icon }).addTo(projectLayer).bindPopup(`
-      <b>${project.name}</b><br>
-      Status: ${project.status}<br>
-      Location: ${project.location}
-      ${project.affectedArea ? `<br>Affected: ${project.affectedArea}` : ""}
-      ${project.endDate ? `<br>Expected completion: ${project.endDate}` : ""}
-    `);
-  });
+function refreshMapData() {
+  if (!campusLocations.length) return Promise.resolve();
+  if (mapRefreshPromise) return mapRefreshPromise;
+  mapRefreshPromise = Promise.all([fetchJson("/api/projects"), fetchJson("/api/announcements")])
+    .then(([projects, announcements]) => {
+      mapItemLayer.clearLayers();
+      projects.forEach(project => {
+        if (!["Planned", "In Progress"].includes(project.status) || !["Construction", "Maintenance"].includes(project.workType)) return;
+        const coordinates = validCoordinates(project);
+        if (!isCampusCoordinate(coordinates, campusLocations)) return;
+        const color = project.workType === "Maintenance" ? "#e87518" : "#d92d20";
+        L.marker(coordinates, { icon: markerIcon(color) }).addTo(mapItemLayer).bindPopup(markerPopup(project, project.workType));
+      });
+      announcements.forEach(announcement => {
+        if (!Boolean(Number(announcement.showOnMap))) return;
+        const coordinates = validCoordinates(announcement);
+        if (!isCampusCoordinate(coordinates, campusLocations)) return;
+        L.marker(coordinates, { icon: markerIcon("#1473b8") }).addTo(mapItemLayer).bindPopup(markerPopup(announcement, "notice"));
+      });
+    })
+    .finally(() => { mapRefreshPromise = null; });
+  return mapRefreshPromise;
 }
 
 function clearRoute() {
@@ -152,7 +232,8 @@ document.getElementById("closeRoutePanel").addEventListener("click", () => setRo
 
 async function initializeMap() {
   try {
-    await Promise.all([loadCampusLocations(), loadProjectMarkers()]);
+    campusLocations = await loadCampusLocations();
+    await refreshMapData();
     const params = new URLSearchParams(window.location.search);
     const from = params.get("from");
     const to = params.get("to");
@@ -170,3 +251,5 @@ async function initializeMap() {
 }
 
 initializeMap();
+window.addEventListener("focus", () => refreshMapData().catch(error => console.error("Map refresh failed:", error.message)));
+setInterval(() => refreshMapData().catch(error => console.error("Map refresh failed:", error.message)), 30000);

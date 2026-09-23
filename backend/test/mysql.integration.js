@@ -34,8 +34,26 @@ test("MySQL schema, seeds, HTTP contracts, uploads, moderation, and routing", { 
   created = true;
   await administrator.changeUser({ database: databaseName });
   await applySchema(administrator);
+  await administrator.execute(
+    "INSERT INTO announcements (id, title, message, date) VALUES (?, ?, ?, ?)",
+    [99001, "Preserved notice", "Existing data must survive schema upgrades.", "2026-09-23"]
+  );
+  await administrator.execute(
+    "INSERT INTO projects (id, name, description, location, status) VALUES (?, ?, ?, ?, ?)",
+    [99002, "Road Maintenance", "Legacy work", "Main Campus Road", "Planned"]
+  );
+  await administrator.query("ALTER TABLE projects DROP COLUMN work_type");
+  await administrator.query("ALTER TABLE announcements DROP COLUMN show_on_map, DROP COLUMN longitude, DROP COLUMN latitude");
+  await administrator.query("ALTER TABLE reports DROP COLUMN published_show_on_map, DROP COLUMN published_longitude, DROP COLUMN published_latitude, DROP COLUMN published_status, DROP COLUMN published_work_type");
   await applySchema(administrator);
   await verifySchema(administrator, databaseName);
+  const [[preservedNotice]] = await administrator.execute("SELECT title, latitude, longitude FROM announcements WHERE id = 99001");
+  assert.equal(preservedNotice.title, "Preserved notice");
+  assert.equal(preservedNotice.latitude, null);
+  assert.equal(preservedNotice.longitude, null);
+  const [[legacyWork]] = await administrator.execute("SELECT work_type FROM projects WHERE id = 99002");
+  assert.equal(legacyWork.work_type, "Maintenance");
+  await administrator.execute("DELETE FROM projects WHERE id = 99002");
   database = mysql.createPool({ ...config, database: databaseName, connectionLimit: 5 });
   const warnings = [], log = { log() {}, warn(message) { warnings.push(message); } };
   const first = await seed({ database, log });
@@ -54,7 +72,7 @@ test("MySQL schema, seeds, HTTP contracts, uploads, moderation, and routing", { 
     return result;
   }
   const reportBody = { name: "Test Student", category: "Construction", location: "Library Area", description: "Construction blocks the library entrance walkway.", latitude: -22.97640546, longitude: 30.44304409 };
-  const review = { status: "Approved", publishedTitle: "Library walkway repairs", publishedCategory: "Construction", publishedLocation: "Library Area", publishedDescription: "Construction blocks the library entrance walkway.", publishedAffectedArea: "Library entrance and nearby walkway", publishedStartDate: "2026-09-23", publishedEndDate: "2026-10-30" };
+  const review = { status: "Approved", publishedType: "project", publishedWorkType: "Construction", publishedStatus: "In Progress", publishedTitle: "Library walkway repairs", publishedLocation: "Library Area", publishedDescription: "Construction blocks the library entrance walkway.", publishedAffectedArea: "Library entrance and nearby walkway", publishedStartDate: "2026-09-23", publishedEndDate: "2026-10-30", publishedLatitude: reportBody.latitude, publishedLongitude: reportBody.longitude, publishedShowOnMap: false };
   const png = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+a0ioAAAAASUVORK5CYII=", "base64");
   function reportForm(photo = png, type = "image/png") {
     const form = new FormData();
@@ -68,6 +86,8 @@ test("MySQL schema, seeds, HTTP contracts, uploads, moderation, and routing", { 
     assert.equal(first.routes.inserted, 40);
     const projects = await store.projects();
     const project = projects.find(item => item.id === 1);
+    assert.equal(project.workType, "Construction");
+    assert.equal(projects.find(item => item.id === 2).workType, "Maintenance");
     await store.updateProject(1, validate.project({ ...project, name: "A member's edited project" }));
     const second = await seed({ database, log });
     assert.ok(Object.values(second).every(count => count.inserted === 0));
@@ -122,7 +142,7 @@ test("MySQL schema, seeds, HTTP contracts, uploads, moderation, and routing", { 
   });
 
   await t.test("direct project CRUD, generated IDs, dates, and direct notice creation", async () => {
-    const body = { name: "New project", description: "A directly created project", location: "Library", status: "Planned", latitude: -22.9764, longitude: 30.4422, startDate: "2026-09-23", endDate: "2026-10-01" };
+    const body = { name: "New project", workType: "Maintenance", description: "A directly created project", location: "Library", status: "Planned", latitude: -22.9764, longitude: 30.4422, startDate: "2026-09-23", endDate: "2026-10-01" };
     const project = await request("POST", "/api/projects", body, 201);
     assert.ok(Number.isSafeInteger(project.id));
     const edited = await request("PUT", `/api/projects/${project.id}`, { ...body, status: "Completed" });
@@ -131,9 +151,14 @@ test("MySQL schema, seeds, HTTP contracts, uploads, moderation, and routing", { 
     await request("DELETE", `/api/projects/${project.id}`);
     await request("DELETE", `/api/projects/${project.id}`, undefined, 404);
     await request("POST", "/api/projects", { ...body, startDate: "2026-02-30" }, 400);
-    const notice = await request("POST", "/api/announcements", { title: "Direct notice", message: "Use the alternative campus walkway." }, 201);
+    const noticeBody = { title: "Direct notice", category: "Other", location: "Library Area", message: "Use the alternative campus walkway.", latitude: -22.9764, longitude: 30.4422, showOnMap: true };
+    const notice = await request("POST", "/api/announcements", noticeBody, 201);
     assert.ok(notice.id > 1790001700061);
     assert.match(notice.date, /^\d{4}-\d{2}-\d{2}$/);
+    assert.equal(notice.category, noticeBody.category);
+    assert.equal(notice.latitude, noticeBody.latitude);
+    assert.equal(notice.showOnMap, true);
+    await request("POST", "/api/projects", { ...body, latitude: -22.978, longitude: 30.458 }, 400);
   });
 
   await t.test("walking/vehicle modes, route geometry, junction and query validation", async () => {
@@ -184,7 +209,7 @@ test("MySQL schema, seeds, HTTP contracts, uploads, moderation, and routing", { 
     await request("PUT", `/api/reports/${report.id}/status`, { status: "Completed" });
     assert.equal((await store.projects()).find(item => item.sourceReportId === report.id).status, "Completed");
     assert.equal((await request("GET", "/api/safe-route?start=7&destination=1")).adjusted, false);
-    const noticeReview = { ...review, publishedCategory: "Water Supply / Damage", publishedTitle: "Water repair notice" };
+    const noticeReview = { ...review, publishedType: "announcement", publishedCategory: "Water Supply / Damage", publishedTitle: "Water repair notice", publishedShowOnMap: true };
     const publishedNotice = await request("PUT", `/api/reports/${report.id}/status`, noticeReview);
     assert.equal((await store.projects()).some(item => item.sourceReportId === report.id), false);
     let notice = (await store.announcements()).find(item => item.sourceReportId === report.id);
@@ -192,6 +217,10 @@ test("MySQL schema, seeds, HTTP contracts, uploads, moderation, and routing", { 
     assert.equal(notice.category, noticeReview.publishedCategory);
     assert.equal(notice.location, review.publishedLocation);
     assert.equal(notice.photoUrl, report.photoUrl);
+    assert.equal(notice.latitude, report.latitude);
+    assert.equal(notice.longitude, report.longitude);
+    assert.equal(notice.showOnMap, true);
+    assert.equal((await store.reports()).find(item => item.id === report.id).category, reportBody.category);
     await request("PUT", `/api/reports/${report.id}/status`, { ...noticeReview, publishedTitle: "Updated notice" });
     assert.equal((await store.announcements()).find(item => item.sourceReportId === report.id).title, "Updated notice");
     await request("PUT", `/api/reports/${report.id}/status`, { ...noticeReview, status: "Rejected" });
